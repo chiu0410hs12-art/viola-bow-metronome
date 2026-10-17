@@ -1,0 +1,398 @@
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>極簡練習模式 · 滿版樂譜</title><style>*{box-sizing:border-box}body{margin:0;font-family:system-ui,"Noto Sans TC",sans-serif}
+label{display:flex;flex-direction:column;gap:4px;font-size:.9rem}label.chk{flex-direction:row;align-items:center;gap:8px}
+select,input[type=number]{font-size:1rem;padding:6px}input[type=range]{width:100%}
+svg{width:100%;height:auto}#staff{touch-action:pan-y}
+body{background:#fbf8f1;color:#222;min-height:100vh}
+#top{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;color:#777;font-size:.95rem}
+#gear{background:none;border:1px solid #ccc;border-radius:20px;padding:6px 14px;font-size:.95rem;color:#555}
+#drawer{position:fixed;top:0;right:0;height:100%;width:min(340px,90vw);background:#fff;box-shadow:-4px 0 20px #0002;padding:16px;display:flex;flex-direction:column;gap:12px;overflow:auto;transform:translateX(105%);transition:.25s;z-index:10}
+#drawer.open{transform:none}#drawer h2{margin:0;font-size:1.1rem;display:flex;justify-content:space-between}
+#stage{padding:0 8px 96px;max-width:1400px;margin:auto}
+#staff{position:relative;background:#fff;border-radius:8px;margin-top:4px}#staff svg{max-width:none!important}
+#box{position:absolute;left:0;top:0;width:0;height:0;opacity:0;background:rgba(255,140,40,.22);border:2px solid rgba(217,110,20,.75);border-radius:6px;pointer-events:none;transition:left .25s ease,top .25s ease,width .25s ease,height .25s ease}
+#mark{position:absolute;width:3px;margin-left:-1px;background:rgba(139,58,58,.55);border-radius:2px;opacity:0;pointer-events:none}
+#pglbl{display:block;text-align:right;color:#999;font-size:.8rem;min-height:1em}#page g.cnh{fill:#8b3a3a}
+#notes{display:none;font-size:clamp(1.4rem,4.5vw,2.4rem);font-weight:600;text-align:center;margin:8px 0;color:#333}
+#bowsym{display:inline-flex;width:2.2rem;height:2.2rem;flex:none}#bowsym svg{width:100%;height:100%;fill:#8b3a3a;display:block}#tnote{transition:color .05s}#count,#status{color:#999;font-size:.9rem}
+#meta{display:flex;align-items:center;gap:14px;justify-content:center}#beatdot{width:14px;height:14px;border-radius:50%;background:#e5e0d6;display:inline-block}
+#beatdot.on{background:#8b3a3a}#beatdot.acc{background:#d98a00}
+#preview{text-align:center;color:#aaa}
+#hint{text-align:center;color:#aaa;font-size:.85rem;margin-top:6px}
+#bar{position:fixed;left:0;right:0;bottom:0;background:#fbf8f1ee;padding:8px 14px;display:flex;flex-direction:column;gap:4px;border-top:1px solid #eee}
+#barrow{display:flex;gap:8px;align-items:center}#barrow .nb{background:none;border:0;font-size:1.4rem;color:#8b3a3a;padding:4px 10px}
+#go{display:none}#barrow input{flex:1}#info{display:flex;justify-content:space-between;font-size:.85rem;color:#888;gap:8px}
+#sec{color:#8b3a3a}.hb{background:none;border:1px solid #ccc;border-radius:12px;font-size:.8rem;color:#777;padding:2px 10px}#repbtn{background:none;border:1px solid #ccc;border-radius:20px;padding:6px 14px;font-size:.95rem;color:#555;margin-right:8px}
+#report{display:none;padding:8px 10px 140px;max-width:1000px;margin:auto}#report.open{display:block}
+#report h2{font-size:1.05rem;margin:6px 0;color:#444}#rlegend{display:flex;gap:12px;flex-wrap:wrap;font-size:.85rem;color:#555;margin-bottom:6px}
+#rlegend i{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+#rstats{font-size:.85rem;color:#666;margin-bottom:8px}#rscore{background:#fff;border-radius:10px;padding:6px;max-height:70vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#rscore svg{display:block;width:100%;height:auto;margin-bottom:2px}#rtip{position:fixed;background:#333;color:#fff;font-size:.8rem;padding:3px 7px;border-radius:6px;pointer-events:none;display:none;z-index:20}
+#tuner{display:flex;align-items:center;gap:10px;justify-content:center;margin:10px auto;max-width:420px}
+#tnote{font-weight:700;font-size:1.3rem;min-width:3.5em;text-align:right}#tcents{min-width:4.5em;font-variant-numeric:tabular-nums}
+#tbar{position:relative;flex:1;height:14px;border-radius:7px;background:linear-gradient(90deg,#bfdbfe,#dcfce7 40%,#dcfce7 60%,#fecaca)}
+#tmid{position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:#555}#tneedle{position:absolute;top:-4px;width:6px;height:22px;border-radius:3px;background:#9ca3af;left:50%;transform:translateX(-50%);transition:left .06s}
+#partial{text-align:center;color:#8b3a3a;margin:6px}#rprob{font-size:.9rem;color:#444;margin:4px 0 8px;padding-left:22px}
+#rhist table{width:100%;border-collapse:collapse;font-size:.8rem}#rhist td,#rhist th{border-bottom:1px solid #eee;padding:3px;text-align:left}
+</style></head><body><div id="top"><span style="visibility:hidden">極簡練習模式 · Flesch No.5</span><span><button id="repbtn">📊 報告</button><button id="gear">⚙ 設定</button></span></div>
+<div id="drawer"><h2>設定 <button id="close" class="hb">✕</button></h2><label>調性<select id="key"></select></label>
+<label>曲目<select id="src"><option value="full">No.5 完整（音階＋琶音）</option><option value="scale">只有音階</option></select></label>
+<label>每弓音數 N（1–24）<input id="n" type="number" min="1" max="24" value="6"></label>
+<label>速度 BPM：<span id="bpmv">60</span><input id="bpm" type="range" min="30" max="200" value="60"></label>
+<label>起始弓<select id="startbow"><option value="down">下弓 ⊓</option><option value="up">上弓 V</option></select></label>
+<label>結尾<select id="end"><option value="stop">停止</option><option value="loop">循環</option></select></label>
+<label class="chk"><input id="pdon" type="checkbox">音準偵測（使用麥克風）</label>
+<label>A4 基準音：<span id="a4v">442</span> Hz<input id="a4" type="range" min="435" max="446" step="1" value="442"></label>
+<label>容許誤差：±<span id="tolv">10</span> 音分<input id="tol" type="range" min="3" max="30" step="1" value="10"></label>
+<div id="micstat" style="font-size:.8rem;color:#888">麥克風：未啟用</div>
+<label class="chk"><input id="accent" type="checkbox" checked>第一拍加重音</label>
+<label class="chk"><input id="countin" type="checkbox">預備拍（一小節 4 拍）</label>
+<label class="chk"><input id="showprev" type="checkbox" checked>顯示下一弓文字</label></div>
+<div id="stage"><div id="meta"><span id="bowsym"></span><span id="count"></span><span id="beatdot"></span><div id="status"></div>
+</div><div id="notes"></div><div id="tuner" style="display:none"><div id="tnote">—</div><div id="tbar"><div id="tmid"></div><div id="tneedle"></div></div><div id="tcents">—</div></div><div id="staff"><div id="page"></div><div id="box"></div><div id="mark"></div></div><div id="below"><span id="pglbl"></span><div id="preview">下一弓：<span id="prevnotes"></span></div>
+<div id="partial" style="display:none">已中途停止。<button id="showpartial" class="hb">顯示目前為止的報告</button></div>
+<div id="hint">點畫面任何地方 開始／停止 · 點小節跳轉 · ← → 或左右滑動換弓</div></div></div>
+<div id="report"><h2 id="rtitle">練習報告</h2>
+<div id="rlegend"><span><i style="background:#16a34a"></i>準</span><span><i style="background:#dc2626"></i>偏高</span><span><i style="background:#2563eb"></i>偏低</span><span><i style="background:#9ca3af"></i>未偵測</span><span style="color:#999">點／滑過音符看音分</span></div>
+<div id="rstats"></div><div id="rscore"></div>
+<h2>問題音（平均偏差最大）</h2><ol id="rprob"></ol>
+<h2>最近 5 輪紀錄</h2><div id="rhist"></div>
+<div style="display:flex;gap:8px;margin-top:8px"><button id="histclear" class="hb">清除紀錄</button><button id="histcsv" class="hb">匯出 CSV</button></div></div><div id="rtip"></div>
+<div id="bar"><div id="barrow"><button id="prev" class="nb">◀</button><button id="go">開始</button><input id="pos" type="range" min="0" max="0" value="0"><button id="nextb" class="nb">▶</button></div><div id="info"><span id="poslbl">第 1 / 1 弓</span><span id="sec"></span><button id="home" class="hb">回到開頭</button></div></div>
+<script></script><script>
+
+// ===== logic (exported for node tests) =====
+const L=(function(){
+const LET="CDEFGAB",NAT=[0,2,4,5,7,9,11];
+const midi=n=>(n.o+1)*12+NAT[n.L]+n.a, step=n=>n.o*7+n.L;
+function add(n,st,se){let l=n.L+st,o=n.o+Math.floor(l/7);l=((l%7)+7)%7;return {L:l,o,a:midi(n)+se-((o+1)*12+NAT[l])};}
+const ACC={"-2":"𝄫","-1":"♭","0":"","1":"♯","2":"𝄪"};
+const name=n=>LET[n.L]+ACC[n.a]+n.o;
+function T(s){return {L:LET.indexOf(s[0]),a:s.slice(1)==="#"?1:s.slice(1)==="b"?-1:0,o:3}}
+const KEYS=[["C","maj"],["G","maj"],["D","maj"],["A","maj"],["E","maj"],["B","maj"],["F#","maj"],["Db","maj"],["Ab","maj"],["Eb","maj"],["Bb","maj"],["F","maj"],
+ ["A","min"],["E","min"],["B","min"],["F#","min"],["C#","min"],["G#","min"],["Eb","min"],["Bb","min"],["F","min"],["C","min"],["G","min"],["D","min"]]
+ .map(([t,m])=>({id:t+(m==="maj"?"":"m"),t,m,label:t.replace("#","♯").replace("b","♭")+(m==="maj"?" 大調":" 小調")}));
+const BASE=[5,0,2,4,6,1,3]; // fifths for C..B: C0 D2 E4 F-1 G1 A3 B5
+const FIF={0:0,1:2,2:4,3:-1,4:1,5:3,6:5};
+function fifths(k){const t=T(k.t);return FIF[t.L]+7*t.a-(k.m==="min"?3:0);}
+const SEMI={maj:[0,2,4,5,7,9,11],up:[0,2,3,5,7,9,11],down:[0,2,3,5,7,8,10]};
+const deg=(t,d,s)=>add(t,d,Math.floor(d/7)*12+s[d%7]);
+const CH=[[[0,0],[2,3],[4,7]],[[0,0],[2,4],[4,7]],[[0,0],[2,4],[5,9]],[[0,0],[3,5],[5,9]],[[0,0],[3,5],[5,8]],
+ [[0,0],[1,3],[3,6],[5,9]],[[0,0],[2,4],[4,7],[6,10]]];
+// Readability clef rule (hysteresis): alto -> treble at first note >= E5; treble -> alto only at notes <= G4.
+// So alto never shows notes above D5 (max 2 ledger lines); A4..D5 stay in whichever clef is current.
+function clefs(s){let c="alto";return s.map(n=>{const st=step(n);
+  if(c==="alto"&&st>=37)c="treble";else if(c==="treble"&&st<=32)c="alto";return {...n,clef:c};});}
+function buildStream(keyId,kind){
+  const k=KEYS.find(x=>x.id===keyId)||KEYS[0],t=T(k.t);
+  const up=k.m==="maj"?SEMI.maj:SEMI.up,dn=k.m==="maj"?SEMI.maj:SEMI.down,s=[];
+  for(let d=0;d<22;d++)s.push({...deg(t,d,up),sec:"音階"});
+  for(let d=20;d>0;d--)s.push({...deg(t,d,dn),sec:"音階"});
+  if(kind==="scale")return {stream:clefs(s),final:{...t,clef:"alto",sec:"音階・結尾長音"},key:k};
+  s.push({...t,sec:"音階"});
+  const pn=(a,b)=>name(add(t,a,b)).replace(/\d+$/,""),T0=pn(0,0);
+  const CN=[T0+" 小三和弦",T0+" 大三和弦",pn(5,9)+" 小三和弦／"+T0,pn(3,5)+" 大三和弦／"+T0,pn(3,5)+" 小三和弦／"+T0,T0+" 減七和弦",T0+"7 屬七和弦"];let ci=0;
+  for(const c of CH){const u=[];for(let o=0;o<3;o++)for(const[a,b]of c)u.push(add(t,a+7*o,b+12*o));u.push(add(t,21,36));
+    const d=[];for(let o=2;o>=0;o--)for(const[a,b]of[...c].reverse())d.push(add(t,a+7*o,b+12*o));d.pop();const nm="琶音・"+CN[ci++];s.push(...[...u,...d].map(n=>({...n,sec:nm})));}
+  return {stream:clefs(s.filter((n,i)=>i===0||midi(n)!==midi(s[i-1]))),final:{...add(t,3,5),clef:"alto",sec:"琶音・結尾長音"},key:k};
+}
+function bows(keyId,kind,N){const{stream,final}=buildStream(keyId,kind),b=[];
+  for(let i=0;i<stream.length;i+=N)b.push({notes:stream.slice(i,i+N),long:false,start:i});b.push({notes:[final],long:true,start:stream.length});return b;}
+function bowDir(i,startUp){return ((i%2===0)!==!!startUp)?"down":"up";}
+return {KEYS,buildStream,bows,name,step,fifths,midi,bowDir};
+})();
+if(typeof module!=="undefined")module.exports=L;
+/* Clef, accidental and notehead outlines: Bravura font by Steinberg Media Technologies GmbH, SIL Open Font License 1.1 (https://github.com/steinbergmedia/bravura). Paths in font units, 1 staff space = 250. */
+const GLY={"g": "M376 415C374 427 376 428 382 434C398 449 419 470 438 491C522 583 572 702 572 815C572 902 548 988 507 1048C492 1070 466 1098 455 1098C441 1098 410 1072 390 1050C316 968 292 843 292 739C292 681 299 616 306 575C308 563 309 561 297 551C233 498 164 437 112 373C43 287 0 194 0 87C0 -87 119 -252 364 -252C387 -252 413 -250 433 -246C444 -244 446 -243 448 -255C460 -322 475 -409 475 -456C475 -604 375 -622 316 -622C262 -622 236 -606 236 -593C236 -586 245 -583 268 -576C299 -567 335 -540 335 -482C335 -427 300 -380 239 -380C172 -380 132 -433 132 -495C132 -560 171 -658 322 -658C389 -658 519 -628 519 -458C519 -401 501 -306 490 -244C488 -232 489 -233 503 -227C604 -187 671 -102 671 11C671 139 577 252 430 252C404 252 404 252 401 270ZM470 943C503 943 530 916 530 861C530 792 497 728 419 650C403 634 379 611 356 591C349 585 345 586 343 599C339 625 337 659 337 691C337 847 409 943 470 943ZM361 262C364 243 364 244 346 238C258 208 201 129 201 44C201 -46 248 -110 316 -133C324 -136 336 -139 343 -139C351 -139 355 -134 355 -128C355 -121 347 -118 340 -115C298 -97 268 -54 268 -8C268 49 307 92 368 109C384 113 386 112 388 101L438 -197C440 -208 439 -208 424 -211C408 -214 388 -216 368 -216C193 -216 80 -119 80 20C80 79 90 158 173 252C233 319 279 356 326 394C336 402 338 401 340 390ZM430 103C428 115 429 118 441 117C522 110 589 42 589 -46C589 -109 551 -160 495 -188C483 -194 481 -194 479 -182Z", "c": "M230 482C230 496 223 503 209 503H208C194 503 187 496 187 482V-482C187 -496 194 -503 208 -503H209C223 -503 230 -496 230 -482V-44C230 -36 235 -37 239 -38C265 -45 307 -71 328 -184C331 -200 337 -209 347 -209C358 -209 363 -199 368 -182C381 -138 404 -89 475 -89C540 -89 558 -153 558 -284C558 -415 535 -474 452 -474C430 -474 410 -471 394 -466C377 -461 367 -454 367 -447C367 -442 383 -436 394 -432C414 -425 434 -405 434 -367C434 -323 405 -298 366 -298C323 -298 289 -327 289 -380C289 -443 344 -506 463 -506C627 -506 699 -391 699 -287C699 -149 623 -53 490 -53C461 -53 442 -58 429 -62C424 -64 418 -65 413 -65C409 -65 404 -64 400 -61C386 -52 364 -20 364 0C364 20 386 52 400 61C404 64 409 65 413 65C418 65 424 64 429 62C442 58 461 53 490 53C623 53 699 149 699 287C699 391 627 506 463 506C344 506 289 443 289 380C289 327 323 298 366 298C405 298 434 323 434 367C434 405 414 425 394 432C383 436 367 442 367 447C367 454 377 461 394 466C410 471 430 474 452 474C535 474 558 415 558 284C558 153 540 89 475 89C404 89 381 138 368 182C363 199 358 209 347 209C337 209 331 200 328 184C307 71 265 45 239 38C235 37 230 36 230 44ZM21 503C7 503 0 496 0 482V-482C0 -496 7 -503 21 -503H107C121 -503 128 -496 128 -482V482C128 496 121 503 107 503Z", "s": "M237 118C244 121 249 129 249 135V206C249 211 246 214 242 214C240 214 239 214 237 213C237 213 217 205 212 204C205 204 198 209 198 217V339C198 345 192 350 184 350C174 350 168 345 168 339V209C167 199 164 186 155 180C143 173 109 159 92 155C83 155 80 167 80 175V295C80 301 73 306 66 306C56 306 50 301 50 295V160C50 146 44 136 38 133C32 130 12 122 12 122C5 120 0 112 0 106V35C0 29 3 26 8 26C9 26 11 27 12 27C12 27 27 33 34 37C35 37 36 38 37 38C44 38 50 28 50 20V-79C50 -90 45 -99 39 -102C33 -104 12 -113 12 -113C5 -115 0 -123 0 -129V-200C0 -206 3 -209 8 -209C9 -209 11 -208 12 -208C12 -208 26 -202 35 -199C36 -198 37 -198 38 -198C45 -198 50 -209 50 -214V-337C50 -343 56 -348 63 -348C73 -348 80 -343 80 -337V-198C80 -185 85 -178 90 -176L151 -151C152 -151 154 -150 155 -150C163 -150 168 -162 168 -168V-293C168 -299 174 -304 181 -304C192 -304 198 -299 198 -293V-151C198 -143 202 -131 209 -128C216 -125 237 -117 237 -117C244 -114 249 -106 249 -100V-29C249 -24 246 -21 242 -21C240 -21 239 -21 237 -22L211 -32C205 -32 198 -26 198 -14V79C198 86 203 105 211 108ZM168 -45C162 -65 115 -85 92 -85C86 -85 81 -83 80 -80C78 -76 77 -54 77 -30C77 1 78 36 80 44C82 61 128 82 153 82C160 82 166 80 168 76C170 71 172 46 172 19C172 -8 170 -36 168 -45Z", "f": "M12 -170C15 -174 18 -175 21 -175C24 -175 27 -173 27 -173C57 -156 81 -129 106 -112C195 -50 226 11 226 57C226 114 182 150 136 153C129 153 122 152 115 150C104 147 92 143 81 136C75 131 64 122 59 122C57 122 56 122 54 123C47 126 43 133 43 140C44 162 50 402 50 422C50 433 41 439 31 439C17 439 1 429 0 411C0 411 4 -160 12 -170ZM47 -81C47 -81 44 -21 44 19C44 35 45 47 46 51C50 63 76 85 90 93C99 98 108 100 116 100C126 100 135 96 141 89C151 78 157 61 157 42C157 24 152 3 140 -18C127 -42 98 -74 68 -93C64 -95 61 -96 58 -96C49 -96 47 -86 47 -81Z", "n": "M141 181C139 181 138 180 137 180C137 180 73 157 47 157C41 157 37 158 37 162V329C37 336 31 341 25 341H12C5 341 0 336 0 329V-186C0 -192 3 -195 8 -195C9 -195 11 -194 12 -194C12 -194 14 -194 15 -193C29 -187 85 -163 114 -163C124 -163 131 -166 131 -174V-323C131 -330 136 -335 143 -335H156C162 -335 168 -330 168 -323V179C168 184 164 187 160 187C159 187 157 187 156 186ZM37 39C37 53 98 79 122 79C128 79 131 78 131 74V-29C131 -47 74 -70 49 -70C42 -70 37 -68 37 -64Z", "ss": "M190 -32C179 -26 143 -6 143 1C143 15 176 30 190 35C194 35 198 34 202 34C218 34 233 38 240 44C245 49 247 64 247 80C247 97 244 115 240 120C236 125 220 127 203 127C185 127 167 125 162 120C158 117 157 99 157 81C152 70 136 34 124 34C110 34 94 67 90 81C90 98 87 116 82 120C78 125 62 127 46 127C29 127 11 125 5 120C2 118 0 101 0 83C0 65 2 47 5 44C12 38 30 34 47 34C51 34 54 35 57 35C68 29 104 9 104 2C104 -11 72 -27 58 -32H48C30 -32 11 -34 5 -39C2 -42 0 -59 0 -77C0 -95 2 -113 5 -115C12 -121 28 -125 45 -125C60 -125 76 -122 82 -115C88 -110 90 -93 90 -77C90 -76 91 -74 92 -73C98 -59 110 -31 123 -31C136 -31 153 -63 157 -77C157 -95 158 -112 162 -115C169 -121 185 -125 202 -125C218 -125 233 -122 240 -115C245 -110 247 -95 247 -79C247 -62 244 -44 240 -39C235 -34 217 -32 200 -32Z", "ff": "M314 151C309 151 305 151 300 150C288 147 277 141 267 135C260 131 252 122 243 122C241 122 239 122 238 123C231 125 228 132 228 140C228 161 234 402 234 421C234 432 225 437 215 437C202 437 186 428 184 411C184 411 185 274 187 135C172 145 155 151 136 151H130C125 151 120 151 116 150C104 147 93 141 83 135C75 131 68 122 59 122C57 122 56 122 54 123C47 125 43 132 43 140C43 161 50 402 50 421C50 432 41 437 31 437C17 437 1 428 0 411C0 411 5 -161 12 -170C15 -174 18 -175 21 -175C24 -175 27 -173 27 -173C58 -157 83 -129 106 -112C143 -86 171 -59 190 -35C192 -110 194 -167 197 -170C200 -174 203 -175 205 -175C208 -175 211 -173 211 -173C242 -157 266 -129 289 -113C379 -50 411 11 411 57C411 113 367 150 320 151ZM141 -18C128 -42 99 -73 67 -93C64 -95 60 -96 58 -96C50 -96 47 -86 47 -80C47 -80 44 -21 44 18C44 34 45 46 46 50C50 63 77 85 91 93C100 98 109 100 117 100C127 100 135 97 141 90C151 78 157 61 157 41C157 23 152 2 141 -18ZM324 -18C312 -42 283 -73 251 -93C247 -95 244 -96 242 -96C234 -96 231 -86 231 -80C231 -80 228 -11 228 27C228 38 228 47 229 50C233 63 260 85 275 93C284 98 293 100 301 100C311 100 319 97 325 90C334 78 340 61 340 41C340 23 335 3 324 -18Z", "nb": "M97 -125C186 -125 295 -43 295 42C295 93 255 125 198 125C88 125 0 44 0 -42C0 -94 43 -125 97 -125Z", "nh": "M97 -125C262 -125 295 9 295 42C295 93 254 125 196 125C47 125 0 10 0 -42C0 -95 42 -125 97 -125ZM173 -46C128 -76 97 -87 75 -87C54 -87 42 -76 35 -64C32 -58 29 -51 29 -44C29 -22 51 5 120 45C170 74 201 84 221 84C240 84 251 75 258 63C261 57 264 51 264 44C264 24 243 0 173 -46Z"};
+// ===== staff (SMuFL glyphs from Bravura) =====
+function G(k,x,y,sp){const s=sp/250;return `<path d="${GLY[k]}" transform="translate(${x},${y}) scale(${s},${-s})"/>`;}
+// ===== full-score layout (v4) =====
+const SP=12,AG={"-2":"ff","-1":"f","0":"n","1":"s","2":"ss"},BOT={alto:24,treble:30};
+const SH=[38,35,39,36,33,37,34],FL=[34,37,33,36,32,35,31],SO=[3,0,4,1,5,2,6],FO=[6,2,5,1,4,0,3];
+const CG=c=>c==="treble"?["g",2]:["c",4];
+const SYS_TOP=4.5*SP,SYS_H=SYS_TOP+4*SP+4.2*SP;
+function headerW(fif){return 3.2*SP+Math.abs(fif)*1.1*SP+SP;}
+// layout: returns {W,pages:[{systems:[{y,measures:[{bow,x0,x1}]}]}],per page svg strings}
+function layoutScore(list,fif,W,availH){
+  const hw=headerW(fif),lineW=W-8-hw-4;
+  // natural widths
+  const items=list.map((b,bi)=>{let w=0;const els=[];let clef=null;
+    b.notes.forEach((nn,j)=>{els.push({n:nn,j});w+=3.2*SP;});return {bi,w:w+SP,els};});
+  // greedy line breaking
+  const lines=[];let cur=[],cw=0;
+  items.forEach(it=>{const w=it.w+ (it.els.length?2.4*SP:0)*0; if(cur.length&&cw+it.w>lineW){lines.push(cur);cur=[];cw=0;}cur.push(it);cw+=it.w;});
+  if(cur.length)lines.push(cur);
+  const perPage=Math.max(1,Math.floor(availH/SYS_H));
+  const pages=[];lines.forEach((ln,li)=>{const p=Math.floor(li/perPage);(pages[p]=pages[p]||{systems:[]}).systems.push(ln);});
+  const keyAlt=l=>fif>0&&SO.slice(0,fif).includes(l)?1:fif<0&&FO.slice(0,-fif).includes(l)?-1:0;
+  const where=[];let clef="alto";
+  const out=pages.map((pg,pi)=>{const H=pg.systems.length*SYS_H+4;let body="",heads="";
+    pg.systems.forEach((ln,si)=>{const top=si*SYS_H+SYS_TOP,Y=p=>top+(8-p)*SP/2;
+      const first=ln[0].els[0].n;let c0=L.step(first)>=37?"treble":(first.clef||clef);
+      // the system clef: the clef in force at its first note
+      clef=first.clef||c0;if(L.step(first)>=37)clef="treble";
+      let x=8;{const[g,p]=CG(clef);body+=G(g,x,Y(p),SP);x+=3.2*SP;}
+      const n=Math.abs(fif),pos=(fif>0?SH:FL).slice(0,n).map(v=>v-(clef==="treble"?0:7));
+      pos.forEach(st=>{body+=G(fif>0?"s":"f",x,Y(st-BOT[clef]),SP);x+=1.1*SP;});x+=SP;
+      // count clef changes in line to compute natural width
+      let tmp=clef,nat=0;ln.forEach(it=>{nat+=it.w;it.els.forEach(e=>{const c=e.n.clef||"alto";if(c!==tmp){tmp=c;nat+=2.4*SP;}});});
+      const avail=W-4-x,last=pi===pages.length-1&&si===pg.systems.length-1;
+      let k=avail/nat;if(last&&k>1)k=Math.min(k,1.25); // don't over-stretch final line
+      for(let i=0;i<5;i++)body+=`<line x1="4" x2="${W-4}" y1="${top+i*SP}" y2="${top+i*SP}" stroke="#222" stroke-width="1.2"/>`;
+      body+=`<line x1="4" x2="4" y1="${top}" y2="${top+4*SP}" stroke="#222" stroke-width="1.5"/>`;
+      ln.forEach(it=>{const x0=x,st={};let s="";const b=list[it.bi];
+        it.els.forEach(({n:nn,j})=>{const c=nn.clef||"alto";
+          if(c!==clef){clef=c;const[g,p]=CG(c);s+=G(g,x+2,Y(p),SP*0.72);x+=2.4*SP*k;}
+          const p=L.step(nn)-BOT[clef],y=Y(p),exp=st[L.step(nn)]??keyAlt(nn.L);let xa=x+1.6*SP*Math.min(1,k);
+          if(nn.a!==exp){s+=G(AG[nn.a],xa-1.4*SP,y,SP);st[L.step(nn)]=nn.a;}
+          for(let q=-2;q>=p;q-=2)s+=`<line x1="${xa-4}" x2="${xa+SP*1.2+4}" y1="${Y(q)}" y2="${Y(q)}" stroke="#222" stroke-width="1.3"/>`;
+          for(let q=10;q<=p;q+=2)s+=`<line x1="${xa-4}" x2="${xa+SP*1.2+4}" y1="${Y(q)}" y2="${Y(q)}" stroke="#222" stroke-width="1.3"/>`;
+          s+=`<g class="nh" data-b="${it.bi}" data-j="${j}" data-i="${b.start+j}" data-x="${xa.toFixed(1)}">${G(b.long?"nh":"nb",xa,y,SP)}</g>`;
+          s+=p<4?`<line x1="${xa+SP*1.15}" x2="${xa+SP*1.15}" y1="${y-1}" y2="${y-3.5*SP}" stroke="#222" stroke-width="1.3"/>`
+                :`<line x1="${xa+0.6}" x2="${xa+0.6}" y1="${y+1}" y2="${y+3.5*SP}" stroke="#222" stroke-width="1.3"/>`;
+          x+=3.2*SP*k;});
+        x+=SP*k;
+        const bx=Math.min(x,W-4);s+=`<line x1="${bx}" x2="${bx}" y1="${top}" y2="${top+4*SP}" stroke="#222" stroke-width="${b.long?3:1.5}"/>`;
+        body+=s;where[it.bi]={page:pi,x0:x0-2,x1:bx+2,y0:top-3.2*SP,y1:top+7.2*SP,sys:si};});
+      // measure number at system start
+      body+=`<text x="6" y="${top-1.6*SP}" font-size="10" fill="#999">${ln[0].bi+1}</text>`;});
+    return {H,svg:`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:auto"><g fill="#111">${body}</g></svg>`};});
+  return {W,pages:out,where};
+}
+const BOWSVG={down:'<svg viewBox="0 0 24 24" aria-label="下弓"><path d="M2 22V2H22V22H18.6V6.6H5.4V22Z"/></svg>',up:'<svg viewBox="0 0 24 24" aria-label="上弓"><path d="M2 2H6.1L12 17.2L17.9 2H22L13.8 22H10.2Z"/></svg>'};
+if(typeof document!=="undefined"){
+const $=id=>document.getElementById(id);
+const ks=$("key");L.KEYS.forEach(k=>{const o=document.createElement("option");o.value=k.id;o.textContent=k.label;ks.appendChild(o);});
+let ctx,timer=null,next=0,beat=0,list=[],cin=0,fif=0,pos=0;
+$("bpm").oninput=()=>$("bpmv").textContent=$("bpm").value;
+function click(t,acc){const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=acc?1500:900;
+  g.gain.setValueAtTime(acc?0.9:0.5,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.05);o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+0.06);}
+function build(){const noteIdx=list.length?list[pos].start:0;
+  const N=Math.min(24,Math.max(1,parseInt($("n").value)||1));$("n").value=N;
+  list=L.bows($("key").value,$("src").value,N);fif=L.fifths(L.KEYS.find(k=>k.id===$("key").value));
+  let j=list.findIndex(b=>b.start<=noteIdx&&noteIdx<b.start+b.notes.length);if(j<0)j=Math.min(noteIdx>0?list.length-1:0,list.length-1);
+  pos=j;$("pos").max=list.length-1;SC=null;}
+function show(i){pos=i;const b=list[i],p=list[i+1]||($("end").value==="loop"?list[0]:null);
+  const bd=L.bowDir(i,$("startbow").value==="up");$("bowsym").innerHTML=BOWSVG[bd];$("bowsym").dataset.dir=bd;$("count").textContent=`第 ${i+1} / ${list.length} 弓`;
+  $("poslbl").textContent=`第 ${i+1} / ${list.length} 弓`;$("pos").value=i;$("sec").textContent=b.notes[0].sec||"";
+  if(!timer)$("status").textContent=(b.long?"最後長音 · ":"")+(bd==="down"?"下弓":"上弓")+` · ${b.notes.length} 音`;
+  else $("status").textContent=(b.long?"最後長音 · ":"")+(bd==="down"?"下弓":"上弓")+` · ${b.notes.length} 音`;
+  $("notes").textContent=b.notes.map(L.name).join(" ");placeBox(i);
+  $("preview").style.display=$("showprev").checked?"":"none";
+  $("prevnotes").textContent=p?p.notes.map(L.name).join(" "):"（結束）";if(window.onShow)window.onShow(i,list);}
+function flash(acc){if(window.onBeat)window.onBeat(acc);const d=$("beatdot");d.className=acc?"acc":"on";setTimeout(()=>d.className="",100);}
+let SC=null,curPage=-1,scKey="";
+function availH(){const s=$("staff"),top=s.getBoundingClientRect().top+scrollY,bar=$("bar").offsetHeight,extra=$("below").offsetHeight;
+  return Math.max(160,innerHeight-top-bar-extra-12);}
+function ensureScore(){const cw=$("staff").clientWidth||360,spPx=cw<520?6.2:cw<900?7.4:8.6,W=Math.round(cw*SP/spPx),H=availH()*SP/spPx-6;
+  const key=[W,Math.round(H),list.length,$("key").value,$("src").value,$("n").value].join("|");
+  if(SC&&key===scKey)return;scKey=key;SC=layoutScore(list,fif,W,H);curPage=-1;}
+function setPage(p){if(p===curPage)return;curPage=p;const pg=SC.pages[p];$("page").innerHTML=pg.svg;
+  $("pglbl").textContent=SC.pages.length>1?`第 ${p+1} / ${SC.pages.length} 頁`:"";
+  const box=$("box");box.style.transition="none";requestAnimationFrame(()=>box.style.transition="");}
+function placeBox(i){ensureScore();const w=SC.where[i];if(!w)return;setPage(w.page);const pg=SC.pages[w.page],W=SC.W,H=pg.H;
+  const box=$("box");box.style.left=(w.x0/W*100)+"%";box.style.width=((w.x1-w.x0)/W*100)+"%";box.style.top=(w.y0/H*100)+"%";box.style.height=((w.y1-w.y0)/H*100)+"%";box.style.opacity=1;
+  document.querySelectorAll("#page g.cnh").forEach(g=>g.classList.remove("cnh"));
+  const hs=document.querySelectorAll(`#page g.nh[data-b="${i}"]`);hs.forEach(g=>g.classList.add("cnh"));
+  const mk=$("mark");if(timer&&hs.length>1&&!list[i].long){const xs=[...hs].map(g=>+g.dataset.x+SP*0.6),spb=60/+$("bpm").value;
+    mk.style.transition="none";mk.style.left=(xs[0]/W*100)+"%";mk.style.top=(w.y0/H*100)+"%";mk.style.height=((w.y1-w.y0)/H*100)+"%";mk.style.opacity=.9;
+    void mk.offsetWidth;mk.style.transition=`left ${spb*(hs.length-1)/hs.length}s linear`;mk.style.left=(xs[xs.length-1]/W*100)+"%";}
+  else mk.style.opacity=0;}
+let rz;addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(()=>{SC=null;show(pos);},150);});
+let startBow=0;
+function tick(){const spb=60/+$("bpm").value;
+  while(next<ctx.currentTime+0.1){const t=next,ms=Math.max(0,(t-ctx.currentTime)*1000);
+    if(cin>0){const k=4-cin;click(t,k===0);if(window.onClickSched)window.onClickSched(performance.now()/1000+(t-ctx.currentTime));setTimeout(()=>{$("status").textContent=`預備 ${k+1}`;flash(k===0)},ms);cin--;}
+    else{if(beat>=list.length){if($("end").value==="loop"){beat=0;if(window.onCycleEnd)window.onCycleEnd();}else{if(!window.__ending){window.__ending=1;setTimeout(()=>{window.__ending=0;stop(true)},ms+Math.round(spb*1000));}return;}}
+      const i=beat,acc=$("accent").checked&&i===startBow;click(t,acc);if(window.onBowSched)window.onBowSched(i,performance.now()/1000+(t-ctx.currentTime),spb,list);setTimeout(()=>{show(i);flash(acc);if(window.onBowShown)window.onBowShown(i);},ms);beat++;}
+    next+=spb;}}
+function start(){ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();window.__ctx=ctx;ctx.resume();build();if(window.onStart)window.onStart();
+  beat=pos;startBow=pos;cin=$("countin").checked?4:0;next=ctx.currentTime+0.1;timer=setInterval(tick,25);$("go").textContent="停止";$("go").className="stop";}
+function stop(atEnd){const was=!!timer;clearInterval(timer);timer=null;if(was&&window.onStop)setTimeout(()=>window.onStop(atEnd===true),0);$("go").textContent="開始";$("go").className="";$("status").textContent="已停止";}
+function goto(i){i=Math.max(0,Math.min(list.length-1,i));
+  if(timer){beat=i;startBow=-1;cin=0;next=ctx.currentTime+0.05;} // jump: next click plays bow i
+  show(i);}
+$("go").onclick=()=>timer?stop():start();window.__goto=i=>goto(i);window.__toggle=()=>timer?stop():start();window.__playing=()=>!!timer;window.__rebuild=()=>{build();if(timer)beat=pos;show(pos);};
+$("prev").onclick=()=>goto(pos-1);$("nextb").onclick=()=>goto(pos+1);$("home").onclick=()=>goto(0);
+$("pos").oninput=()=>goto(+$("pos").value);
+document.addEventListener("keydown",e=>{if(["INPUT","SELECT"].includes(e.target.tagName)&&e.target.type!=="range")return;
+  if(e.key==="ArrowRight"){e.preventDefault();goto(pos+1);}if(e.key==="ArrowLeft"){e.preventDefault();goto(pos-1);}});
+let tx=null,ty=null;const st=$("staff");
+st.addEventListener("touchstart",e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY;},{passive:true});
+st.addEventListener("touchend",e=>{if(tx===null)return;const dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;
+  if(Math.abs(dx)>40&&Math.abs(dx)>Math.abs(dy)){goto(pos+(dx<0?1:-1));st.dataset.swiped=1;}tx=null;},{passive:true});
+st.addEventListener("click",e=>{if(st.dataset.swiped){delete st.dataset.swiped;return;}const svg=st.querySelector("#page svg");if(!svg||!SC)return;
+  const r=svg.getBoundingClientRect(),k=SC.W/r.width,x=(e.clientX-r.left)*k,y=(e.clientY-r.top)*k;
+  const hit=SC.where.findIndex(w=>w&&w.page===curPage&&x>=w.x0&&x<=w.x1&&y>=w.y0&&y<=w.y1);if(hit>=0&&hit!==pos)goto(hit);});
+["key","src","n"].forEach(id=>$(id).onchange=()=>{build();if(timer){beat=pos;if(id!=="n"&&window.onStart)window.onStart();}SC=null;show(pos);});
+$("end").onchange=()=>show(pos);$("startbow").onchange=()=>show(pos);$("showprev").onchange=()=>show(pos);
+const q=new URLSearchParams(location.search);if(q.get("key"))$("key").value=q.get("key");if(q.get("n"))$("n").value=q.get("n");if(q.get("sb"))$("startbow").value=q.get("sb");
+build();show(Math.min(+(q.get("i")||0),list.length-1));if(!q.get("i"))$("status").textContent="按「開始」";
+}
+</script><script>
+// ===== PD (pitch detection & matching; pure functions, node-testable) =====
+const PD=(function(){
+function yin(buf,sr,fmin=120,fmax=1400,thr=0.15){
+  const tmin=Math.max(2,Math.floor(sr/fmax)-2),tmax=Math.ceil(sr/fmin)+2,W=buf.length-tmax;if(W<64)return null;
+  let rms=0;for(let i=0;i<buf.length;i++)rms+=buf[i]*buf[i];rms=Math.sqrt(rms/buf.length);if(rms<0.005)return null;
+  const d=new Float32Array(tmax+2);
+  for(let t=1;t<=tmax+1;t++){let s=0;for(let i=0;i<W;i++){const x=buf[i]-buf[i+t];s+=x*x;}d[t]=s;}
+  const c=new Float32Array(tmax+2);c[0]=1;let run=0;for(let t=1;t<=tmax+1;t++){run+=d[t];c[t]=run?d[t]*t/run:1;}
+  let tau=-1;for(let t=tmin;t<=tmax;t++){if(c[t]<thr){while(t+1<=tmax&&c[t+1]<c[t])t++;tau=t;break;}}
+  if(tau<0)return null;
+  const a=c[tau-1],b=c[tau],e=c[tau+1],den=a-2*b+e,shift=den?0.5*(a-e)/den:0;
+  const f=sr/(tau+shift);if(f<fmin*0.97||f>fmax*1.03)return null;return {f,clarity:1-b};
+}
+const cents=(f,ref)=>1200*Math.log2(f/ref);
+const freq=(midi,a4)=>a4*Math.pow(2,(midi-69)/12);
+function classify(c,tol){return c==null?"nd":Math.abs(c)<=tol?"ok":c>0?"hi":"lo";}
+const color=k=>({ok:"#16a34a",hi:"#dc2626",lo:"#2563eb",nd:"#9ca3af"})[k];
+const median=a=>{if(!a.length)return null;const b=[...a].sort((x,y)=>x-y),m=b.length>>1;return b.length%2?b[m]:(b[m-1]+b[m])/2;};
+// frames:[{t,f,clarity}], clicks:[t], bow:{t0,spb,midis:[...]} -> [cents|null]
+function matchBow(frames,clicks,bow,a4,opt={}){const k=bow.midis.length,slot=bow.spb/k,tol=opt.slotTol??0.015,acc=opt.accept??60,cg=opt.clickGuard??0.02,cl=opt.minClarity??0.8;
+  return bow.midis.map((m,j)=>{const s0=bow.t0+j*slot-tol,s1=bow.t0+(j+1)*slot+tol,ef=freq(m,a4),v=[];
+    for(const fr of frames){if(fr.t<s0||fr.t>s1||fr.clarity<cl)continue;if(clicks.some(c=>Math.abs(fr.t-c)<cg))continue;
+      const c=cents(fr.f,ef);if(Math.abs(c)<=acc)v.push(c);}
+    const md=median(v);return md==null?null:Math.round(md*10)/10;});}
+function counts(arr,tol){const r={ok:0,hi:0,lo:0,nd:0};arr.forEach(c=>r[classify(c,tol)]++);return r;}
+function problems(notes,cs,nameFn,tol,top=5){const g={};notes.forEach((n,i)=>{const c=cs[i];if(c==null)return;const k=nameFn(n);(g[k]=g[k]||[]).push(c);});
+  return Object.entries(g).map(([k,v])=>({note:k,avg:v.reduce((a,b)=>a+b,0)/v.length,n:v.length})).filter(o=>Math.abs(o.avg)>tol/2)
+    .sort((a,b)=>Math.abs(b.avg)-Math.abs(a.avg)).slice(0,top);}
+return {yin,cents,freq,classify,color,median,matchBow,counts,problems};
+})();
+if(typeof module!=="undefined")module.exports=PD;
+// ===== PD end =====
+</script><script>
+// ===== intonation UI wiring =====
+const $i=id=>document.getElementById(id);
+const IN={on:false,stream:null,an:null,buf:null,sr:48000,frames:[],clicks:[],bows:[],cyc:null,curBow:-1,poll:null};
+const a4=()=>+$i("a4").value;
+$i("a4").oninput=()=>$i("a4v").textContent=$i("a4").value;
+$i("tol").oninput=()=>{$i("tolv").textContent=$i("tol").value;TOL=+$i("tol").value;applyColors();if($i("report").classList.contains("open"))renderReport();};
+function newCycle(){const kId=$i("key").value,kind=$i("src").value,{stream,final}=L.buildStream(kId,kind);
+  return {key:kId,kind,N:+$i("n").value,bpm:+$i("bpm").value,len:stream.length+1,notes:[...stream,final],cents:new Array(stream.length+1).fill(null),done:new Set(),live:{},n:(IN.cycN=(IN.cycN||0)+1)};}
+async function micOn(){try{
+  const st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+  const ac=new (window.AudioContext||window.webkitAudioContext)();await ac.resume();const src=ac.createMediaStreamSource(st),an=ac.createAnalyser();an.fftSize=2048;src.connect(an);
+  Object.assign(IN,{stream:st,ac,an,buf:new Float32Array(2048),sr:ac.sampleRate,on:true});$i("micstat").textContent="麥克風：已啟用（"+ac.sampleRate+" Hz）";$i("tuner").style.display="flex";dispatchEvent(new Event("resize"));
+  IN.poll=setInterval(pollMic,15);}catch(e){$i("pdon").checked=false;$i("micstat").textContent="麥克風無法啟用："+e.message;}}
+function micOff(){clearInterval(IN.poll);if(IN.stream)IN.stream.getTracks().forEach(t=>t.stop());if(IN.ac)IN.ac.close();IN.on=false;$i("tuner").style.display="none";dispatchEvent(new Event("resize"));$i("micstat").textContent="麥克風：未啟用";}
+$i("pdon").onchange=()=>$i("pdon").checked?micOn():micOff();
+function nearestName(f){const m=69+12*Math.log2(f/a4()),r=Math.round(m),N=["C","C♯","D","E♭","E","F","F♯","G","A♭","A","B♭","B"];return {name:N[(r%12+12)%12]+(Math.floor(r/12)-1),c:(m-r)*100};}
+function outLat(){const c=window.__ctx;return c?(c.outputLatency||0)+(c.baseLatency||0):0;}
+const lagNow=()=>IN.lag||0,shifted=(b,lag)=>({...b,t0:b.t0+lag}),shiftClicks=lag=>IN.clicks.map(c=>c+lag);
+// Auto latency: mic input latency + player's reaction to the audible click shift every note later than the scheduled slot.
+// Search 0..300 ms for the offset where the most detected frames fall on the expected note of their slot.
+function estimateLag(bs){let best=lagNow(),bestS=-1,cur=0;
+  for(let q=0;q<=30;q++){const off=q/100;let s=0;
+    for(const b of bs){const k=b.midis.length,slot=b.spb/k;
+      for(const fr of IN.frames){const dt=fr.t-b.t0-off;if(dt<0||dt>=b.spb||fr.clarity<0.8)continue;
+        if(Math.abs(PD.cents(fr.f,PD.freq(b.midis[Math.floor(dt/slot)],a4())))<=50)s++;}}
+    if(Math.abs(off-lagNow())<0.005)cur=s;if(s>bestS){bestS=s;best=off;}}
+  if(bestS>=8&&bestS>cur*1.1)IN.lag=best;}
+function pollMic(){IN.an.getFloatTimeDomainData(IN.buf);const t=performance.now()/1000-IN.buf.length/IN.sr/2,r=PD.yin(IN.buf,IN.sr);
+  if(!r||r.clarity<0.8){$i("tneedle").style.background="#9ca3af";evalDue();return;}
+  if(IN.cyc)IN.frames.push({t,f:r.f,clarity:r.clarity});if(IN.frames.length>6000)IN.frames.splice(0,1500);
+  // live tuner: relative to the expected note of the slot this frame belongs to (latency-compensated), else nearest semitone
+  const lag=lagNow();let lab,c;const cb=IN.bows.find(b=>t>=b.t0+lag&&t<b.t0+lag+b.spb);
+  if(cb){const j=Math.min(cb.midis.length-1,Math.floor((t-cb.t0-lag)/(cb.spb/cb.midis.length)));c=PD.cents(r.f,PD.freq(cb.midis[j],a4()));
+    if(Math.abs(c)>60){const nn=nearestName(r.f);lab=nn.name;c=nn.c;}else lab=L.name(cb.notes[j]);}
+  else{const nn=nearestName(r.f);lab=nn.name;c=nn.c;}
+  const col=PD.color(PD.classify(c,TOL));$i("tnote").textContent=lab;$i("tnote").style.color=col;$i("tcents").textContent=(c>0?"+":"")+c.toFixed(1)+" 音分";
+  $i("tneedle").style.left=(50+Math.max(-50,Math.min(50,c)))+"%";$i("tneedle").style.background=col;
+  if(cb)liveColor(cb);evalDue();}
+// live results are stored per stream-note index (cyc.live) and painted onto any rendered notehead with data-i -> survive re-render / relayout / page flips
+function liveColor(b){const lag=lagNow();PD.matchBow(IN.frames,shiftClicks(lag),shifted(b,lag),a4()).forEach((c,j)=>{if(c!=null)b.cyc.live[b.start+j]=c;});applyColors();}
+function applyColors(){const c=IN.cyc||IN.lastCyc,ok=!!c&&c.key===$i("key").value&&c.kind===$i("src").value;
+  document.querySelectorAll("#staff g[data-i]").forEach(g=>{const i=+g.dataset.i,v=ok?(c.cents[i]!=null?c.cents[i]:c.live[i]):null;g.style.fill=v==null?"":COL(v);});}
+window.__applyColors=()=>applyColors();
+function evalDue(force,only){const now=performance.now()/1000;
+  const due=IN.bows.filter(b=>(!only||b.cyc===only)&&(force?b.t0<=now:now>b.t0+b.spb+0.33));if(!due.length)return;
+  if(!force)estimateLag([...(IN.recent||[]),...due]);const lag=lagNow(),ck=shiftClicks(lag);
+  due.forEach(b=>{PD.matchBow(IN.frames,ck,shifted(b,lag),a4()).forEach((c,j)=>{b.cyc.cents[b.start+j]=c;});b.cyc.done.add(b.i);});
+  IN.recent=[...(IN.recent||[]),...due].slice(-3);IN.bows=IN.bows.filter(b=>!due.includes(b));applyColors();}
+window.onStart=()=>{IN.cyc=newCycle();IN.lastCyc=null;IN.frames=[];IN.clicks=[];IN.bows=[];IN.recent=[];$i("partial").style.display="none";applyColors();};
+window.onClickSched=t=>IN.clicks.push(t+outLat());
+window.onBowSched=(i,t0,spb,list)=>{t0+=outLat();IN.clicks.push(t0);if(!IN.cyc)IN.cyc=newCycle();const b=list[i];
+  IN.bows.push({i,t0,spb,start:b.start,notes:b.notes,midis:b.notes.map(L.midi),cyc:IN.cyc});};
+window.onBowShown=i=>{IN.curBow=i;};
+function finish(cyc,partial){if(!cyc)return;const cs=cyc.cents;
+  if(!partial){const c=PD.counts(cs,TOL);const h=hist();h.push({date:new Date().toLocaleString("zh-TW",{hour12:false}),key:L.KEYS.find(k=>k.id===cyc.key).label,N:cyc.N,bpm:cyc.bpm,...c});
+    try{localStorage.setItem("bowMetronomeHistory",JSON.stringify(h.slice(-50)));}catch(e){console.warn("history not saved",e);}}
+  window.renderIntonationReport({cycle:cyc.n,cents:cs,partial,key:cyc.key,kind:cyc.kind,N:cyc.N});}
+window.onCycleEnd=()=>{const old=IN.cyc;IN.cyc=newCycle();IN.lastCyc=old;if(!IN.on)return;setTimeout(()=>{evalDue(true,old);finish(old,false);},(60/+$i("bpm").value)*1000+450);};
+window.onStop=atEnd=>{const cyc=IN.cyc;if(!IN.on||!cyc){IN.cyc=null;return;}
+  // keep recording ~0.4 s so the (latency-delayed) last note is captured, then evaluate only this cycle's bows that actually started
+  setTimeout(()=>{evalDue(true,cyc);IN.bows=IN.bows.filter(b=>b.cyc!==cyc);if(IN.cyc===cyc)IN.cyc=null;IN.lastCyc=cyc;applyColors();
+    if(atEnd)finish(cyc,false);else if(cyc.done.size){$i("partial").style.display="block";IN.partialCyc=cyc;}},400);};
+$i("showpartial").onclick=e=>{e.stopPropagation();finish(IN.partialCyc,true);$i("partial").style.display="none";};
+const hist=()=>{try{return JSON.parse(localStorage.getItem("bowMetronomeHistory")||"[]")}catch(e){return []}};
+function renderHist(){const h=hist().slice(-5).reverse();$i("rhist").innerHTML=h.length?`<table><tr><th>日期</th><th>調性</th><th>N</th><th>BPM</th><th>準</th><th>高</th><th>低</th><th>未測</th></tr>${h.map(r=>`<tr><td>${r.date}</td><td>${r.key}</td><td>${r.N}</td><td>${r.bpm}</td><td>${r.ok}</td><td>${r.hi}</td><td>${r.lo}</td><td>${r.nd}</td></tr>`).join("")}</table>`:"<span style='color:#999'>尚無紀錄</span>";}
+$i("histclear").onclick=e=>{e.stopPropagation();if(confirm("確定清除所有練習紀錄？")){localStorage.removeItem("bowMetronomeHistory");renderHist();}};
+$i("histcsv").onclick=e=>{e.stopPropagation();const h=hist(),rows=[["日期","調性","每弓音數","BPM","準","偏高","偏低","未偵測"],...h.map(r=>[r.date,r.key,r.N,r.bpm,r.ok,r.hi,r.lo,r.nd])];
+  const csv="\ufeff"+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="練習紀錄.csv";a.click();};
+const dr=document.getElementById("drawer");document.getElementById("gear").onclick=e=>{e.stopPropagation();dr.classList.add("open")};
+document.getElementById("close").onclick=e=>{e.stopPropagation();dr.classList.remove("open")};
+document.getElementById("stage").addEventListener("click",e=>{if(e.target.closest("#staff"))return;window.__toggle();});
+document.getElementById("staff").addEventListener("dblclick",()=>window.__toggle());
+window.onShow=()=>{applyColors();document.getElementById("hint").textContent=window.__playing()?"練習中 · 點畫面停止":"點畫面任何地方 開始／停止 · ← → 或左右滑動換弓"};
+
+// ===== full-score intonation report =====
+// window.__intonation = {cycle:n, cents:[...]} indexed by stream note (null = not detected); final long note last.
+let TOL=10;const COL=c=>PD.color(PD.classify(c,TOL));
+function reportLine(notes,fif,sp,maxW){const top=4*sp,H=top+4*sp+4*sp,Y=p=>top+(8-p)*sp/2,BOT={alto:24,treble:30};
+  const SH=[38,35,39,36,33,37,34],FL=[34,37,33,36,32,35,31],SO=[3,0,4,1,5,2,6],FO=[6,2,5,1,4,0,3];
+  const keyAlt=l=>fif>0&&SO.slice(0,fif).includes(l)?1:fif<0&&FO.slice(0,-fif).includes(l)?-1:0;
+  const AG={"-2":"ff","-1":"f","0":"n","1":"s","2":"ss"};
+  let clef=notes[0].n.clef||"alto",x=4,g="";const cg=c=>c==="treble"?["g",2]:["c",4];
+  {const[k,p]=cg(clef);g+=G(k,x,Y(p),sp);x+=3*sp;}
+  (fif>0?SH:FL).slice(0,Math.abs(fif)).forEach(st=>{g+=G(fif>0?"s":"f",x,Y(st-(clef==="treble"?0:7)-BOT[clef]),sp);x+=1.05*sp;});x+=0.6*sp;
+  let st={},lastBow=notes[0].bow,bars="";
+  notes.forEach(o=>{const nn=o.n,c=nn.clef||"alto";
+    if(o.bow!==lastBow&&!o.barStart){bars+=`<line x1="${x}" x2="${x}" y1="${top}" y2="${top+4*sp}" stroke="#bbb" stroke-dasharray="2,2"/>`;x+=0.5*sp;lastBow=o.bow;}
+    if(o.bow!==lastBow)lastBow=o.bow;
+    if(o.barStart){bars+=`<line x1="${x}" x2="${x}" y1="${top}" y2="${top+4*sp}" stroke="#222" stroke-width="1.3"/>`;x+=0.6*sp;st={};}
+    if(c!==clef){clef=c;const[k,p]=cg(c);g+=G(k,x,Y(p),sp*0.7);x+=2.1*sp;}
+    const p=L.step(nn)-BOT[clef],y=Y(p),exp=st[L.step(nn)]??keyAlt(nn.L);
+    if(nn.a!==exp){g+=G(AG[nn.a],x,y,sp);st[L.step(nn)]=nn.a;}const xa=x+1.3*sp;
+    for(let q=-2;q>=p;q-=2)g+=`<line x1="${xa-3}" x2="${xa+sp*1.2+3}" y1="${Y(q)}" y2="${Y(q)}" stroke="#222"/>`;
+    for(let q=10;q<=p;q+=2)g+=`<line x1="${xa-3}" x2="${xa+sp*1.2+3}" y1="${Y(q)}" y2="${Y(q)}" stroke="#222"/>`;
+    const col=COL(o.c),lbl=o.c==null?"未偵測":(o.c>0?"+":"")+o.c+" 音分";
+    g+=`<g fill="${col}" class="rn" data-t="${L.name(nn)}：${lbl}">${G(o.long?"nh":"nb",xa,y,sp)}<rect x="${xa-2}" y="${y-sp}" width="${sp*1.6}" height="${2*sp}" fill="transparent"/></g>`;
+    x+=2.6*sp;});
+  const W=x+4;let out=`<svg viewBox="0 0 ${W} ${H}" style="width:${Math.min(100,W/maxW*100).toFixed(2)}%" xmlns="http://www.w3.org/2000/svg">`;
+  for(let i=0;i<5;i++)out+=`<line x1="2" x2="${W-2}" y1="${top+i*sp}" y2="${top+i*sp}" stroke="#222" stroke-width="1"/>`;
+  return out+bars+`<line x1="${x}" x2="${x}" y1="${top}" y2="${top+4*sp}" stroke="#222" stroke-width="1.3"/><g fill="#111">${g}</g></svg>`;}
+function renderReport(){const R=window.__intonation;if(!R)return;const keyId=R.key||document.getElementById("key").value,kind=R.kind||document.getElementById("src").value;
+  const N=R.N||+document.getElementById("n").value,bw=L.bows(keyId,kind,N),fif=L.fifths(L.KEYS.find(k=>k.id===keyId));
+  const all=[];let idx=0;const{stream}=L.buildStream(keyId,kind);
+  bw.forEach((b,bi)=>b.notes.forEach(n=>{const i=idx++;const prev=i>0?(stream[i-1]||null):null;
+    const sec=n.sec||"",mid=b.long?"final":sec.startsWith("音階")?"s"+Math.min(3,Math.floor(i/12)):sec;
+    all.push({n,bow:bi,long:b.long,c:R.cents[i]??null,mid});}));
+  const perLine=window.innerWidth<600?14:26,sp=10,meas=[];
+  all.forEach((o,k)=>{if(!k||o.mid!==all[k-1].mid)meas.push([]);meas.at(-1).push(o);});
+  // pack whole Flesch measures into lines; never split a measure. An over-wide measure gets its own line (scaled down via the SVG viewBox).
+  const lines=[];let cur=[];meas.forEach(m=>{if(cur.length&&cur.length+m.length>perLine){lines.push(cur);cur=[];}
+    m.forEach((o,j)=>o.barStart=j===0&&cur.length>0);cur.push(...m);if(cur.length>=perLine){lines.push(cur);cur=[];}});if(cur.length)lines.push(cur);
+  window.__reportLines=lines.map(l=>l.map(o=>o.mid));
+  const maxW=perLine*2.6*sp+12*sp;document.getElementById("rscore").innerHTML=lines.map(l=>reportLine(l,fif,sp,maxW)).join("");
+  const cnt={ok:0,hi:0,lo:0,nd:0};all.forEach(o=>o.c==null?cnt.nd++:Math.abs(o.c)<=TOL?cnt.ok++:o.c>0?cnt.hi++:cnt.lo++);
+  document.getElementById("rtitle").textContent=`練習報告・第 ${R.cycle||1} 輪${R.partial?"（部分）":""}（${L.KEYS.find(k=>k.id===keyId).label}，每弓 ${N} 音）`;
+  document.getElementById("rstats").textContent=`共 ${all.length} 音：準 ${cnt.ok}・偏高 ${cnt.hi}・偏低 ${cnt.lo}・未偵測 ${cnt.nd}（容許 ±${TOL} 音分）`;
+  const pr=PD.problems(all.map(o=>o.n),all.map(o=>o.c),L.name,TOL);
+  document.getElementById("rprob").innerHTML=pr.length?pr.map(p=>`<li><b>${p.note}</b>：平均 ${p.avg>0?"+":""}${p.avg.toFixed(1)} 音分（${p.avg>0?"偏高":"偏低"}，${p.n} 次）</li>`).join(""):"<li style='color:#999'>沒有明顯的問題音</li>";
+  if(typeof renderHist==="function")renderHist();}
+const tip=document.getElementById("rtip");
+function tipAt(e,t){tip.textContent=t;tip.style.display="block";tip.style.left=Math.min(innerWidth-160,e.clientX+10)+"px";tip.style.top=(e.clientY-30)+"px";}
+document.getElementById("rscore").addEventListener("mouseover",e=>{const g=e.target.closest(".rn");if(g)tipAt(e,g.dataset.t);});
+document.getElementById("rscore").addEventListener("mouseout",()=>tip.style.display="none");
+document.getElementById("rscore").addEventListener("click",e=>{e.stopPropagation();const g=e.target.closest(".rn");if(g){tipAt(e,g.dataset.t);setTimeout(()=>tip.style.display="none",2000);}});
+document.getElementById("repbtn").onclick=e=>{e.stopPropagation();const r=document.getElementById("report");r.classList.toggle("open");if(r.classList.contains("open")){renderReport();r.scrollIntoView({behavior:"smooth"});}};
+document.getElementById("report").addEventListener("click",e=>e.stopPropagation());
+window.renderIntonationReport=(data)=>{window.__intonation=data;renderReport();document.getElementById("report").classList.add("open");};
+(function(){const q=new URLSearchParams(location.search);if(q.get("mock")){let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  const{stream}=L.buildStream(document.getElementById("key").value,document.getElementById("src").value);
+  const cents=[...stream,0].map(()=>{const r=rnd();return r<0.08?null:Math.round((rnd()-0.5)*44);});
+  window.renderIntonationReport({cycle:3,cents});document.body.dataset.lines=JSON.stringify(window.__reportLines);}})();
+window.__rebuild();if(window.__intonation)renderReport();</script></body></html>
