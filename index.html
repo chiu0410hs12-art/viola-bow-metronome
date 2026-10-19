@@ -41,8 +41,9 @@ body{background:#fbf8f1;color:#222;min-height:100vh}
 #partial{text-align:center;color:#8b3a3a;margin:6px}#rprob{font-size:.9rem;color:#444;margin:4px 0 8px;padding-left:22px}
 #rhist table{width:100%;border-collapse:collapse;font-size:.8rem}#rhist td,#rhist th{border-bottom:1px solid #eee;padding:3px;text-align:left}
 </style></head><body><div id="top"><span style="visibility:hidden">極簡練習模式 · Flesch No.5</span><span><button id="repbtn">📊 報告</button><button id="gear">⚙ 設定</button></span></div>
-<div id="drawer"><h2>設定 <button id="close" class="hb">✕</button></h2><label>調性<select id="key"></select></label>
-<label>曲目<select id="src"><option value="full">No.5 完整（音階＋琶音）</option><option value="scale">只有音階</option></select></label>
+<div id="drawer"><h2>設定 <button id="close" class="hb">✕</button></h2><label id="keylbl">調性<select id="key"></select></label>
+<label>曲目<select id="src"><option value="full">No.5 完整（音階＋琶音）</option><option value="scale">只有音階</option><option value="mode">調式音階</option></select></label>
+<div id="moderow" style="display:none;flex-direction:column;gap:12px"><label>調式<select id="mode"></select></label><label>主音<select id="mtonic"></select></label></div>
 <label>每弓音數 N（1–24）<input id="n" type="number" min="1" max="24" value="6"></label>
 <label>速度 BPM：<span id="bpmv">60</span><input id="bpm" type="range" min="30" max="200" value="60"></label>
 <label>起始弓<select id="startbow"><option value="down">下弓 ⊓</option><option value="up">上弓 V</option></select></label>
@@ -80,7 +81,7 @@ const KEYS=[["C","maj"],["G","maj"],["D","maj"],["A","maj"],["E","maj"],["B","ma
  .map(([t,m])=>({id:t+(m==="maj"?"":"m"),t,m,label:t.replace("#","♯").replace("b","♭")+(m==="maj"?" 大調":" 小調")}));
 const BASE=[5,0,2,4,6,1,3]; // fifths for C..B: C0 D2 E4 F-1 G1 A3 B5
 const FIF={0:0,1:2,2:4,3:-1,4:1,5:3,6:5};
-function fifths(k){const t=T(k.t);return FIF[t.L]+7*t.a-(k.m==="min"?3:0);}
+function fifths(k){const t=T(k.t);return FIF[t.L]+7*t.a-(k.m==="min"?3:0)+(k.m==="mode"?MODES[k.mode].shift:0);}
 const SEMI={maj:[0,2,4,5,7,9,11],up:[0,2,3,5,7,9,11],down:[0,2,3,5,7,8,10]};
 const deg=(t,d,s)=>add(t,d,Math.floor(d/7)*12+s[d%7]);
 const CH=[[[0,0],[2,3],[4,7]],[[0,0],[2,4],[4,7]],[[0,0],[2,4],[5,9]],[[0,0],[3,5],[5,9]],[[0,0],[3,5],[5,8]],
@@ -89,8 +90,19 @@ const CH=[[[0,0],[2,3],[4,7]],[[0,0],[2,4],[4,7]],[[0,0],[2,4],[5,9]],[[0,0],[3,
 // So alto never shows notes above D5 (max 2 ledger lines); A4..D5 stay in whichever clef is current.
 function clefs(s){let c="alto";return s.map(n=>{const st=step(n);
   if(c==="alto"&&st>=37)c="treble";else if(c==="treble"&&st<=32)c="alto";return {...n,clef:c};});}
+// ===== modal scales (調式音階) =====
+const MODES=[["Ionian","伊奧尼亞",0],["Dorian","多利安",-2],["Phrygian","弗里吉亞",-4],["Lydian","利地亞",1],["Mixolydian","混合利地亞",-1],["Aeolian","艾奧利亞",-3],["Locrian","洛克里亞",-5]]
+ .map(([en,zh,shift],m)=>({en,zh,shift,semis:[0,1,2,3,4,5,6].map(k=>([0,2,4,5,7,9,11][(k+m)%7]-[0,2,4,5,7,9,11][m]+12)%12)}));
+// tonic spelling: the enharmonic whose parent-major key signature has the fewest accidentals (tie: natural letter, then sharps)
+function modeTonic(pc,m){const c=[];for(let l=0;l<7;l++)for(const a of[-1,0,1])if(((NAT[l]+a)%12+12)%12===pc)c.push({l,a,f:FIF[l]+7*a+MODES[m].shift});
+  c.sort((x,y)=>Math.abs(x.f)-Math.abs(y.f)||Math.abs(x.a)-Math.abs(y.a)||y.f-x.f);const b=c[0];return LET[b.l]+(b.a>0?"#":b.a<0?"b":"");}
+MODES.forEach((M,m)=>{for(let pc=0;pc<12;pc++){const t=modeTonic(pc,m);KEYS.push({id:t+"-"+M.en.toLowerCase(),t,m:"mode",mode:m,pc,label:t.replace("#","♯").replace("b","♭")+" "+M.zh+"（"+M.en+"）"});}});
+const modeKeyId=(pc,m)=>KEYS.find(k=>k.m==="mode"&&k.pc===+pc&&k.mode===+m).id;
+function modeStream(k){const t=T(k.t),sm=MODES[k.mode].semis,span=midi(t)+36<=88?3:2,top=7*span,s=[];   // 3 octaves if the top stays <= E6, else 2
+  for(let d=0;d<=top;d++)s.push({...deg(t,d,sm),sec:"調式音階"});for(let d=top-1;d>0;d--)s.push({...deg(t,d,sm),sec:"調式音階"});
+  return {stream:clefs(s),final:{...t,clef:"alto",sec:"調式音階・結尾長音"},key:k,span};}
 function buildStream(keyId,kind){
-  const k=KEYS.find(x=>x.id===keyId)||KEYS[0],t=T(k.t);
+  const k=KEYS.find(x=>x.id===keyId)||KEYS[0],t=T(k.t);if(k.m==="mode")return modeStream(k);
   const up=k.m==="maj"?SEMI.maj:SEMI.up,dn=k.m==="maj"?SEMI.maj:SEMI.down,s=[];
   for(let d=0;d<22;d++)s.push({...deg(t,d,up),sec:"音階"});
   for(let d=20;d>0;d--)s.push({...deg(t,d,dn),sec:"音階"});
@@ -105,7 +117,7 @@ function buildStream(keyId,kind){
 function bows(keyId,kind,N){const{stream,final}=buildStream(keyId,kind),b=[];
   for(let i=0;i<stream.length;i+=N)b.push({notes:stream.slice(i,i+N),long:false,start:i});b.push({notes:[final],long:true,start:stream.length});return b;}
 function bowDir(i,startUp){return ((i%2===0)!==!!startUp)?"down":"up";}
-return {KEYS,buildStream,bows,name,step,fifths,midi,bowDir};
+return {KEYS,MODES,modeKeyId,buildStream,bows,name,step,fifths,midi,bowDir};
 })();
 if(typeof module!=="undefined")module.exports=L;
 /* Clef, accidental and notehead outlines: Bravura font by Steinberg Media Technologies GmbH, SIL Open Font License 1.1 (https://github.com/steinbergmedia/bravura). Paths in font units, 1 staff space = 250. */
@@ -199,7 +211,9 @@ function layoutScore(list,fif,W,availH){
 const BOWSVG={down:'<svg viewBox="0 0 24 24" aria-label="下弓"><path d="M2 22V2H22V22H18.6V6.6H5.4V22Z"/></svg>',up:'<svg viewBox="0 0 24 24" aria-label="上弓"><path d="M2 2H6.1L12 17.2L17.9 2H22L13.8 22H10.2Z"/></svg>'};
 if(typeof document!=="undefined"){
 const $=id=>document.getElementById(id);
-const ks=$("key");L.KEYS.forEach(k=>{const o=document.createElement("option");o.value=k.id;o.textContent=k.label;ks.appendChild(o);});
+const ks=$("key");L.KEYS.forEach(k=>{const o=document.createElement("option");o.value=k.id;o.textContent=k.label;if(k.m==="mode")o.hidden=true;ks.appendChild(o);});
+L.MODES.forEach((M,m)=>{const o=document.createElement("option");o.value=m;o.textContent=M.zh+" "+M.en;$("mode").appendChild(o);});
+["C","C♯／D♭","D","E♭／D♯","E","F","F♯／G♭","G","A♭／G♯","A","B♭／A♯","B"].forEach((n,pc)=>{const o=document.createElement("option");o.value=pc;o.textContent=n;$("mtonic").appendChild(o);});
 let ctx,timer=null,next=0,beat=0,list=[],cin=0,fif=0,pos=0;
 $("bpm").oninput=()=>$("bpmv").textContent=$("bpm").value;
 function click(t,acc){const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=acc?1500:900;
@@ -313,7 +327,10 @@ $("rng").addEventListener("click",e=>{const x=e.target.closest(".rgx");if(!x)ret
 $("rangeclr").onclick=e=>{e.stopPropagation();window.__clearRange();};
 ["key","src","n"].forEach(id=>$(id).onchange=()=>{build();if(timer){beat=pos;if(id!=="n"&&window.onStart)window.onStart();}show(pos);});
 $("end").onchange=()=>show(pos);$("startbow").onchange=()=>show(pos);$("showprev").onchange=()=>show(pos);
-const q=new URLSearchParams(location.search);if(q.get("key"))$("key").value=q.get("key");if(q.get("n"))$("n").value=q.get("n");if(q.get("sb"))$("startbow").value=q.get("sb");
+function syncMode(){const isM=$("src").value==="mode";$("moderow").style.display=isM?"flex":"none";$("keylbl").style.display=isM?"none":"";
+  const cur=L.KEYS.find(k=>k.id===$("key").value);if(isM)$("key").value=L.modeKeyId($("mtonic").value,$("mode").value);else if(cur&&cur.m==="mode")$("key").value=L.KEYS[0].id;}
+{const o=$("src").onchange;$("src").onchange=()=>{syncMode();o();};["mode","mtonic"].forEach(id=>$(id).onchange=()=>{syncMode();$("key").onchange();});}
+const q=new URLSearchParams(location.search);if(q.get("key"))$("key").value=q.get("key");if(q.get("n"))$("n").value=q.get("n");if(q.get("sb"))$("startbow").value=q.get("sb");{const k=L.KEYS.find(k=>k.id===$("key").value);if(k&&k.m==="mode"){$("src").value="mode";$("mode").value=k.mode;$("mtonic").value=k.pc;}syncMode();}
 {const CK="bowMetronome.countin.v2";try{if(localStorage.getItem(CK)==="0")$("countin").checked=false;}catch(e){}$("countin").addEventListener("change",()=>{try{localStorage.setItem(CK,$("countin").checked?"1":"0");}catch(e){}});}
 build();show(Math.min(+(q.get("i")||0),list.length-1));if(!q.get("i"))$("status").textContent="按「開始」";
 }
@@ -456,7 +473,7 @@ function renderReport(){const R=window.__intonation;if(!R)return;const keyId=R.k
   const N=R.N||+document.getElementById("n").value,bw=L.bows(keyId,kind,N),fif=L.fifths(L.KEYS.find(k=>k.id===keyId));
   const all=[];let idx=0;const{stream}=L.buildStream(keyId,kind);
   bw.forEach((b,bi)=>b.notes.forEach(n=>{const i=idx++;const prev=i>0?(stream[i-1]||null):null;
-    const sec=n.sec||"",mid=b.long?"final":sec.startsWith("音階")?"s"+Math.min(3,Math.floor(i/12)):sec;
+    const sec=n.sec||"",mid=b.long?"final":sec.includes("音階")?"s"+Math.min(3,Math.floor(i/12)):sec;
     all.push({n,idx:i,bow:bi,long:b.long,c:R.cents[i]??null,mid});}));
   const segs=R.segs&&R.segs.length?R.segs:null,groups=segs?segs.map(([a,b])=>all.filter(o=>o.idx>=a&&o.idx<=b)):[all];all.splice(0,all.length,...groups.flat());
   const perLine=window.innerWidth<600?14:26,sp=10,maxW=perLine*2.6*sp+12*sp;let html="";window.__reportLines=[];
