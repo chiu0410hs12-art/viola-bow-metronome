@@ -51,7 +51,7 @@ body{background:#fbf8f1;color:#222;min-height:100vh}
 <label>每弓音數 N（1–24）<input id="n" type="number" min="1" max="24" value="6"></label>
 <label><span id="bpmlbl">速度 BPM</span>：<span id="bpmv">60</span><input id="bpm" type="range" min="30" max="200" value="60"></label>
 <details id="rhy"><summary>節奏設定</summary>
-<label>拍號<select id="meter"><option value="">預設（每弓一拍，平均分配）</option><option>2/4</option><option>3/4</option><option>4/4</option><option>5/8</option><option>6/8</option><option>7/8</option></select></label>
+<label>拍號<select id="meter"><option value="">預設（每弓一拍，平均分配）</option><option>2/4</option><option>3/4</option><option>4/4</option><option>6/8</option></select></label>
 <div id="rhyopts" style="display:none"><label id="grplbl">拍子分組<select id="grouping"></select></label>
 <div class="lbl">節奏型組合（依序循環）</div><div id="seq"></div>
 <div class="rrow"><select id="patadd"></select><button id="patbtn" class="hb">＋加入</button><button id="patclr" class="hb">清除</button></div>
@@ -182,7 +182,9 @@ function measures(tl,cfg){const m=METERS[cfg.meter],acc=accentsOf(cfg),ms={};
   return Object.values(ms).sort((a,b)=>a.idx-b.idx);}
 const grName=cfg=>{const m=METERS[cfg.meter];return m.gr.length>1?"（"+grp(cfg).join("+")+"）":"";};
 const label=cfg=>cfg.meter?cfg.meter+grName(cfg)+" · "+seqOf(cfg).map(id=>PAT[id].n).join("→"):"";
-return {PAT,METERS,plen,groups,pulses,defaultAccents,accentsOf,patternsFor,defaultSeq,seqOf,apply,clicks,countIn,bows,measures,label,unit:cfg=>METERS[cfg.meter].unit,unitName:cfg=>METERS[cfg.meter].un};
+// 5/8 and 7/8 temporarily hidden from UI (code paths kept; add back here to re-enable)
+const ENABLED=["2/4","3/4","4/4","6/8"];
+return {ENABLED,PAT,METERS,plen,groups,pulses,defaultAccents,accentsOf,patternsFor,defaultSeq,seqOf,apply,clicks,countIn,bows,measures,label,unit:cfg=>METERS[cfg.meter].unit,unitName:cfg=>METERS[cfg.meter].un};
 })();
 // ===== RH end =====
 /* Clef, accidental and notehead outlines: Bravura font by Steinberg Media Technologies GmbH, SIL Open Font License 1.1 (https://github.com/steinbergmedia/bravura). Paths in font units, 1 staff space = 250. */
@@ -481,7 +483,7 @@ function rhyRender(){const on=!!RS.meter;$("rhyopts").style.display=on?"":"none"
   $("patadd").innerHTML=RH.patternsFor(cfg).map(id=>`<option value="${id}">${RH.PAT[id].n}${e8?`（${RH.plen(id)/24}♪）`:""}</option>`).join("");
   const acc=RH.accentsOf(cfg),g=M.gr[RS.grouping]||M.gr[0];let h="",pi=0;g.forEach(p=>{h+=`<span class="accg">`;for(let j=0;j<p;j++,pi++)h+=`<button class="accb a${acc[pi]}" data-p="${pi}">${pi+1}</button>`;h+=`</span>`;});$("accrow").innerHTML=h;}
 function rhyChanged(){if(timer)stop();build();SC=null;miniKey="";show(Math.min(pos,list.length-1));rhyRender();}
-$("meter").onchange=()=>{RS.meter=$("meter").value;RS.grouping=0;if(RS.meter){const c=rcfg();RS.seq=RH.defaultSeq(c);RS.accents=RH.defaultAccents(c);}rhyChanged();};
+$("meter").onchange=()=>{RS.meter=RH.ENABLED.includes($("meter").value)?$("meter").value:"";$("meter").value=RS.meter;RS.grouping=0;if(RS.meter){const c=rcfg();RS.seq=RH.defaultSeq(c);RS.accents=RH.defaultAccents(c);}rhyChanged();};
 $("grouping").onchange=()=>{RS.grouping=+$("grouping").value;RS.accents=RH.defaultAccents(rcfg());RS.seq=RH.seqOf(rcfg());rhyChanged();};
 $("patbtn").onclick=e=>{e.preventDefault();RS.seq=[...RS.seq,$("patadd").value];rhyChanged();};
 $("patclr").onclick=e=>{e.preventDefault();RS.seq=[];rhyChanged();};
@@ -492,7 +494,7 @@ $("bowmode").onchange=()=>{RS.bowmode=$("bowmode").value;rhyChanged();};
 $("subdiv").onchange=()=>{RS.subdiv=$("subdiv").checked;rhyChanged();};
 $("accmarks").onchange=()=>{RS.accMarks=$("accmarks").checked;rhyChanged();};
 window.__rh=()=>({RS,TL,list,spt:rspt()});window.__rhLabel=()=>RS.meter?RH.label(rcfg()):"";
-window.__setRhythm=o=>{Object.assign(RS,o);$("meter").value=RS.meter;$("bowmode").value=RS.bowmode;$("subdiv").checked=RS.subdiv;$("accmarks").checked=RS.accMarks;rhyChanged();};
+window.__setRhythm=o=>{Object.assign(RS,o);if(RS.meter&&!RH.ENABLED.includes(RS.meter)){RS.meter="";RS.grouping=0;}$("meter").value=RS.meter;$("bowmode").value=RS.bowmode;$("subdiv").checked=RS.subdiv;$("accmarks").checked=RS.accMarks;rhyChanged();};
 ["key","src","n"].forEach(id=>$(id).onchange=()=>{build();if(timer){beat=pos;if(id!=="n"&&window.onStart)window.onStart();}show(pos);});
 $("end").onchange=()=>show(pos);$("startbow").onchange=()=>show(pos);$("showprev").onchange=()=>show(pos);
 function syncMode(){const isM=$("src").value==="mode";$("moderow").style.display=isM?"flex":"none";$("keylbl").style.display=isM?"none":"";
