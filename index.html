@@ -57,7 +57,7 @@ body{background:#fbf8f1;color:#222;min-height:100vh}
 <div class="rrow"><select id="patadd"></select><button id="patbtn" class="hb">＋加入</button><button id="patclr" class="hb">清除</button></div>
 <label>換弓<select id="bowmode"><option value="n">每 N 音（上方設定）</option><option value="beat">每拍（每組）</option><option value="measure">每小節</option></select></label>
 <div class="lbl">重音：點拍子切換 強／中／無 <button id="accreset" class="hb">預設</button></div><div id="accrow"></div>
-<label class="chk"><input id="subdiv" type="checkbox">細分拍點擊聲（八分）</label><label class="chk"><input id="accmarks" type="checkbox" checked>譜上顯示重音記號</label></div></details>
+<label class="chk"><input id="subdiv" type="checkbox">細分拍點擊聲（八分）</label><label class="chk" style="display:none"><input id="accmarks" type="checkbox">譜上顯示重音記號</label></div></details>
 <label>起始弓<select id="startbow"><option value="down">下弓 ⊓</option><option value="up">上弓 V</option></select></label>
 <label>結尾<select id="end"><option value="stop">停止</option><option value="loop">循環</option></select></label>
 <label class="chk"><input id="pdon" type="checkbox">音準偵測（使用麥克風）</label>
@@ -410,7 +410,7 @@ function placeBox(i){updRangeUI();const b=list[i];
   drawRange();}
 let rz;addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(()=>{SC=null;show(pos);},150);});
 // ===== rhythm engine (meter-aware scheduling) =====
-let RON=false,TL=null,FULLMS=null,RT=null,miniKey="";const RS={meter:"",grouping:0,seq:[],accents:[],bowmode:"n",subdiv:false,accMarks:true};
+let RON=false,TL=null,FULLMS=null,RT=null,miniKey="";const RS={meter:"",grouping:0,seq:[],accents:[],bowmode:"n",subdiv:false,accMarks:false};
 function rcfg(){return {meter:RS.meter,grouping:RS.grouping,seq:RS.seq,accents:RS.accents,subdiv:RS.subdiv};}
 function rspt(){return 60/+$("bpm").value/RH.unit(rcfg());}
 function rstart(){const spt=rspt(),b=list[pos],c0=ctx.currentTime+0.1,ci=$("countin").checked;
@@ -427,7 +427,7 @@ function rtick(){const now=ctx.currentTime+0.1,spt=RT.spt;
   if(RT.bi>=list.length&&RT.ci>=TL.clicks.length){const tEnd=RT.t0+TL.total*spt;
     if($("end").value==="loop"){if(tEnd<now){RT.t0=tEnd;RT.ci=0;RT.bi=0;if(window.onCycleEnd)window.onCycleEnd();}}
     else if(!endT)endT=setTimeout(()=>{endT=null;stop(true)},Math.max(0,(tEnd-ctx.currentTime)*1000));}}
-let startBow=0,endT=null,lastToggle=0,nSched=0,gapAt=-1;
+let startBow=0,endT=null,lastToggle=-1e9,nSched=0,gapAt=-1;
 
 function tick(){if(RON)return rtick();const spb=60/+$("bpm").value;
   while(next<ctx.currentTime+0.1){const t=next,ms=Math.max(0,(t-ctx.currentTime)*1000);
