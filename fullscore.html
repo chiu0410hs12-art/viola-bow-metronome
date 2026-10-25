@@ -46,7 +46,7 @@ body{background:#fbf8f1;color:#222;min-height:100vh}
 #rhist table{width:100%;border-collapse:collapse;font-size:.8rem}#rhist td,#rhist th{border-bottom:1px solid #eee;padding:3px;text-align:left}
 </style></head><body><div id="top"><span style="visibility:hidden">極簡練習模式 · Flesch No.5</span><span><button id="repbtn">📊 報告</button><button id="gear">⚙ 設定</button></span></div>
 <div id="drawer"><h2>設定 <button id="close" class="hb">✕</button></h2><label id="keylbl">調性<select id="key"></select></label>
-<label>曲目<select id="src"><option value="full">No.5 完整（音階＋琶音）</option><option value="scale">只有音階</option><option value="mode">調式音階</option></select></label>
+<label>曲目<select id="src"><option value="full">音階＋琶音</option><option value="scale">只有音階</option><option value="mode">調式音階</option></select></label>
 <div id="moderow" style="display:none;flex-direction:column;gap:12px"><label>調式<select id="mode"></select></label><label>主音<select id="mtonic"></select></label></div>
 <label>每弓音數 N（1–24）<input id="n" type="number" min="1" max="24" value="6"></label>
 <label><span id="bpmlbl">速度 BPM</span>：<span id="bpmv">60</span><input id="bpm" type="range" min="30" max="200" value="60"></label>
@@ -305,7 +305,7 @@ function layoutRhythm(ms,fif,W,availH,opts){
 const BOWSVG={down:'<svg viewBox="0 0 24 24" aria-label="下弓"><path d="M2 22V2H22V22H18.6V6.6H5.4V22Z"/></svg>',up:'<svg viewBox="0 0 24 24" aria-label="上弓"><path d="M2 2H6.1L12 17.2L17.9 2H22L13.8 22H10.2Z"/></svg>'};
 if(typeof document!=="undefined"){
 const $=id=>document.getElementById(id);
-const ks=$("key");L.KEYS.forEach(k=>{const o=document.createElement("option");o.value=k.id;o.textContent=k.label;if(k.m==="mode")o.hidden=true;ks.appendChild(o);});
+const ks=$("key");L.KEYS.forEach(k=>{const o=document.createElement("option");o.value=k.id;o.textContent=k.label;if(k.m!=="mode")ks.appendChild(o);});
 L.MODES.forEach((M,m)=>{const o=document.createElement("option");o.value=m;o.textContent=M.zh+" "+M.en;$("mode").appendChild(o);});
 ["C","C♯／D♭","D","E♭／D♯","E","F","F♯／G♭","G","A♭／G♯","A","B♭／A♯","B"].forEach((n,pc)=>{const o=document.createElement("option");o.value=pc;o.textContent=n;$("mtonic").appendChild(o);});
 let ctx,timer=null,next=0,beat=0,list=[],cin=0,fif=0,pos=0;
@@ -464,9 +464,9 @@ window.__setRhythm=o=>{Object.assign(RS,o);$("meter").value=RS.meter;$("bowmode"
 ["key","src","n"].forEach(id=>$(id).onchange=()=>{build();if(timer){beat=pos;if(id!=="n"&&window.onStart)window.onStart();}SC=null;show(pos);});
 $("end").onchange=()=>show(pos);$("startbow").onchange=()=>show(pos);$("showprev").onchange=()=>show(pos);
 function syncMode(){const isM=$("src").value==="mode";$("moderow").style.display=isM?"flex":"none";$("keylbl").style.display=isM?"none":"";
-  const cur=L.KEYS.find(k=>k.id===$("key").value);if(isM)$("key").value=L.modeKeyId($("mtonic").value,$("mode").value);else if(cur&&cur.m==="mode")$("key").value=L.KEYS[0].id;}
+  const cur=L.KEYS.find(k=>k.id===$("key").value);[...$("key").options].forEach(o=>{if(o.dataset.mode)o.remove();});if(isM){const mk=L.KEYS.find(k=>k.id===L.modeKeyId($("mtonic").value,$("mode").value));const o=document.createElement("option");o.value=mk.id;o.textContent=mk.label;o.dataset.mode=1;$("key").appendChild(o);$("key").value=mk.id;}else if(cur&&cur.m==="mode")$("key").value=L.KEYS[0].id;}
 {const o=$("src").onchange;$("src").onchange=()=>{syncMode();o();};["mode","mtonic"].forEach(id=>$(id).onchange=()=>{syncMode();$("key").onchange();});}
-const q=new URLSearchParams(location.search);if(q.get("key"))$("key").value=q.get("key");if(q.get("n"))$("n").value=q.get("n");if(q.get("sb"))$("startbow").value=q.get("sb");{const k=L.KEYS.find(k=>k.id===$("key").value);if(k&&k.m==="mode"){$("src").value="mode";$("mode").value=k.mode;$("mtonic").value=k.pc;}syncMode();}
+const q=new URLSearchParams(location.search);if(q.get("key")){const qk=L.KEYS.find(k=>k.id===q.get("key"));if(qk&&qk.m==="mode"){const o=document.createElement("option");o.value=qk.id;o.dataset.mode=1;$("key").appendChild(o);}$("key").value=q.get("key");}if(q.get("n"))$("n").value=q.get("n");if(q.get("sb"))$("startbow").value=q.get("sb");{const k=L.KEYS.find(k=>k.id===$("key").value);if(k&&k.m==="mode"){$("src").value="mode";$("mode").value=k.mode;$("mtonic").value=k.pc;}syncMode();}
 {const CK="bowMetronome.countin.v2";try{if(localStorage.getItem(CK)==="0")$("countin").checked=false;}catch(e){}$("countin").addEventListener("change",()=>{try{localStorage.setItem(CK,$("countin").checked?"1":"0");}catch(e){}});}
 rhyRender();build();show(Math.min(+(q.get("i")||0),list.length-1));if(!q.get("i"))$("status").textContent="按「開始」";
 }
