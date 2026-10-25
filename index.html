@@ -12,6 +12,10 @@ body{background:#fbf8f1;color:#222;min-height:100vh}
 #staff svg{max-width:none!important;max-height:56vh}#staff{position:relative;margin-top:4px}
 #box{position:absolute;left:0;top:0;width:0;height:0;opacity:0;background:rgba(255,140,40,.22);border:2px solid rgba(217,110,20,.75);border-radius:6px;pointer-events:none;transition:left .25s ease,top .25s ease,width .25s ease,height .25s ease}
 #mark{position:absolute;opacity:0;pointer-events:none}#page g.cnh{fill:#8b3a3a}
+#rhy{border:1px solid #e5e0d6;border-radius:10px;padding:6px 10px}#rhy summary{cursor:pointer;font-weight:600;color:#8b3a3a}#rhyopts{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.chip{display:inline-flex;align-items:center;gap:4px;background:#f3ede2;border-radius:12px;padding:2px 8px;font-size:.85rem;margin:2px 0}.chip b{cursor:pointer;color:#999;font-weight:400}.chip small{color:#999}.arr{color:#bbb;margin:0 3px}
+.rrow{display:flex;gap:6px;align-items:center}.rrow select{flex:1;min-width:0}.lbl{font-size:.9rem}
+#accrow{display:flex;flex-wrap:wrap;gap:10px}.accg{display:inline-flex;gap:3px}.accb{width:34px;height:34px;border-radius:8px;border:1px solid #ccc;background:#fff;font-weight:700;color:#999}.accb.a2{background:#8b3a3a;color:#fff;border-color:#8b3a3a}.accb.a1{background:#f0c9a8;color:#8b3a3a;border-color:#d9a27a}
 #rangebar{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;font-size:.85rem;color:#1d4ed8;margin:4px 0}
 .rgr{position:absolute;background:rgba(var(--c),.13);border:2px solid rgba(var(--c),.6);border-radius:6px;pointer-events:none}.rgr.pend{border-style:dashed}
 .rgx{position:absolute;right:-6px;top:-9px;background:#fff;color:rgb(var(--c));border:1px solid rgb(var(--c));border-radius:10px;font-size:11px;line-height:16px;padding:0 5px;pointer-events:auto;cursor:pointer;white-space:nowrap}
@@ -45,14 +49,22 @@ body{background:#fbf8f1;color:#222;min-height:100vh}
 <label>曲目<select id="src"><option value="full">No.5 完整（音階＋琶音）</option><option value="scale">只有音階</option><option value="mode">調式音階</option></select></label>
 <div id="moderow" style="display:none;flex-direction:column;gap:12px"><label>調式<select id="mode"></select></label><label>主音<select id="mtonic"></select></label></div>
 <label>每弓音數 N（1–24）<input id="n" type="number" min="1" max="24" value="6"></label>
-<label>速度 BPM：<span id="bpmv">60</span><input id="bpm" type="range" min="30" max="200" value="60"></label>
+<label><span id="bpmlbl">速度 BPM</span>：<span id="bpmv">60</span><input id="bpm" type="range" min="30" max="200" value="60"></label>
+<details id="rhy"><summary>節奏設定</summary>
+<label>拍號<select id="meter"><option value="">預設（每弓一拍，平均分配）</option><option>2/4</option><option>3/4</option><option>4/4</option><option>5/8</option><option>6/8</option><option>7/8</option></select></label>
+<div id="rhyopts" style="display:none"><label id="grplbl">拍子分組<select id="grouping"></select></label>
+<div class="lbl">節奏型組合（依序循環）</div><div id="seq"></div>
+<div class="rrow"><select id="patadd"></select><button id="patbtn" class="hb">＋加入</button><button id="patclr" class="hb">清除</button></div>
+<label>換弓<select id="bowmode"><option value="n">每 N 音（上方設定）</option><option value="beat">每拍（每組）</option><option value="measure">每小節</option></select></label>
+<div class="lbl">重音：點拍子切換 強／中／無 <button id="accreset" class="hb">預設</button></div><div id="accrow"></div>
+<label class="chk"><input id="subdiv" type="checkbox">細分拍點擊聲（八分）</label><label class="chk"><input id="accmarks" type="checkbox" checked>譜上顯示重音記號</label></div></details>
 <label>起始弓<select id="startbow"><option value="down">下弓 ⊓</option><option value="up">上弓 V</option></select></label>
 <label>結尾<select id="end"><option value="stop">停止</option><option value="loop">循環</option></select></label>
 <label class="chk"><input id="pdon" type="checkbox">音準偵測（使用麥克風）</label>
 <label>A4 基準音：<span id="a4v">442</span> Hz<input id="a4" type="range" min="435" max="446" step="1" value="442"></label>
 <label>容許誤差：±<span id="tolv">10</span> 音分<input id="tol" type="range" min="3" max="30" step="1" value="10"></label>
 <div id="micstat" style="font-size:.8rem;color:#888">麥克風：未啟用</div>
-<label class="chk"><input id="accent" type="checkbox" checked>第一拍加重音</label>
+<label class="chk" id="accentlbl"><input id="accent" type="checkbox" checked>第一拍加重音</label>
 <label class="chk"><input id="countin" type="checkbox" checked>預備拍（一小節 4 拍）</label>
 <label class="chk"><input id="showprev" type="checkbox" checked>顯示下一弓文字</label></div>
 <div id="stage"><div id="meta"><span id="bowsym"></span><span id="count"></span><span id="beatdot"></span><div id="status"></div>
@@ -120,6 +132,59 @@ function bowDir(i,startUp){return ((i%2===0)!==!!startUp)?"down":"up";}
 return {KEYS,MODES,modeKeyId,buildStream,bows,name,step,fifths,midi,bowDir};
 })();
 if(typeof module!=="undefined")module.exports=L;
+// ===== RH (meter / rhythm patterns / accents; pure, node-testable) =====
+const RH=(function(){
+// ticks: quarter = 48
+const PAT={q:{n:"四分音符 ♩",d:[48]},e2:{n:"兩個八分 ♫",d:[24,24]},s4:{n:"四個十六分",d:[12,12,12,12]},tr:{n:"八分三連音",d:[16,16,16]},
+ des:{n:"附點八分＋十六分",d:[36,12]},sde:{n:"十六分＋附點八分",d:[12,36]},ess:{n:"八分＋兩個十六分",d:[24,12,12]},sse:{n:"兩個十六分＋八分",d:[12,12,24]},sw:{n:"搖擺（長－短）",d:[32,16]},
+ dq:{n:"附點四分 ♩.",d:[72]},e3:{n:"三個八分",d:[24,24,24]},qe:{n:"四分＋八分",d:[48,24]},eq:{n:"八分＋四分",d:[24,48]},s6:{n:"六個十六分",d:[12,12,12,12,12,12]},esse:{n:"八分＋兩個十六分＋八分",d:[24,12,12,24]}};
+const METERS={"2/4":{pulse:48,unit:48,un:"♩",gr:[[1,1]]},"3/4":{pulse:48,unit:48,un:"♩",gr:[[1,1,1]]},"4/4":{pulse:48,unit:48,un:"♩",gr:[[1,1,1,1]]},
+ "5/8":{pulse:24,unit:24,un:"♪",gr:[[2,3],[3,2]]},"6/8":{pulse:24,unit:72,un:"♩.",gr:[[3,3]]},"7/8":{pulse:24,unit:24,un:"♪",gr:[[2,2,3],[3,2,2],[2,3,2]]}};
+const plen=id=>PAT[id].d.reduce((a,b)=>a+b,0);
+const grp=cfg=>{const m=METERS[cfg.meter];return m.gr[cfg.grouping|0]||m.gr[0];};
+const groups=cfg=>grp(cfg).map(p=>p*METERS[cfg.meter].pulse);
+const pulses=cfg=>grp(cfg).reduce((a,b)=>a+b,0);
+function defaultAccents(cfg){const m=METERS[cfg.meter],g=grp(cfg),a=[];
+  if(m.pulse===48)g.forEach((_,k)=>a.push(k===0?2:(g.length===4&&k===2)?1:0));else g.forEach((p,k)=>{for(let j=0;j<p;j++)a.push(j===0?(k===0?2:1):0);});return a;}
+const accentsOf=cfg=>cfg.accents&&cfg.accents.length===pulses(cfg)?cfg.accents:defaultAccents(cfg);
+function patternsFor(cfg){const gs=groups(cfg);return Object.keys(PAT).filter(id=>gs.includes(plen(id)));}
+function defaultSeq(cfg){const gs=new Set(groups(cfg)),s=[];if(gs.has(48))s.push("e2");if(gs.has(72))s.push("e3");return s;}
+const seqOf=cfg=>{const ok=patternsFor(cfg),s=(cfg.seq||[]).filter(id=>ok.includes(id));return s.length?s:defaultSeq(cfg);};
+// notes:[{i,seg,long,n}] in play order -> {ev:[{...,tick,dur}],M,gs,gst,total}
+function apply(notes,cfg){const gs=groups(cfg),M=gs.reduce((a,b)=>a+b,0),gst=gs.map((_,k)=>gs.slice(0,k).reduce((a,b)=>a+b,0)),seq=seqOf(cfg);
+  let ptr=0,q=[],tick=0,prevSeg=null;const ev=[];
+  const pick=len=>{for(let k=0;k<seq.length;k++){const id=seq[(ptr+k)%seq.length];if(plen(id)===len){ptr=(ptr+k+1)%seq.length;return PAT[id].d.slice();}}return len===72?PAT.e3.d.slice():PAT.e2.d.slice();};
+  const gIdx=t=>{const r=t%M;let g=0;gst.forEach((s,k)=>{if(r>=s)g=k;});return g;};
+  notes.forEach(o=>{
+    if(prevSeg!==null&&o.seg!==prevSeg){const r=tick%M;tick+=r?M-r:M;q=[];ptr=0;}   // each segment starts on a fresh barline (short gap)
+    prevSeg=o.seg;
+    if(o.long){if(q.length){const r=tick%M,g=gIdx(tick);tick=tick-r+gst[g]+gs[g];q=[];}let d=M-tick%M;if(d<M/2)d+=M;ev.push({...o,tick,dur:d});tick+=d;return;}
+    if(!q.length)q=pick(gs[gIdx(tick)]);
+    const d=q.shift();ev.push({...o,tick,dur:d});tick+=d;});
+  return {ev,M,gs,gst,total:Math.max(M,Math.ceil(tick/M)*M)};}
+// metronome clicks over the whole timeline: group starts always, accented pulses, optional subdivision (eighths)
+function clicks(tl,cfg){const m=METERS[cfg.meter],acc=accentsOf(cfg),out=[];
+  for(let mt=0;mt<tl.total;mt+=tl.M){let pi=0;tl.gs.forEach((g,gk)=>{for(let p=0;p<g/m.pulse;p++,pi++){const t=mt+tl.gst[gk]+p*m.pulse,st=p===0,lv=acc[pi];
+      if(st||lv>0||cfg.subdiv)out.push({tick:t,level:lv>0?lv:(st?0:"sub")});if(m.pulse===48&&cfg.subdiv)out.push({tick:t+24,level:"sub"});}});}
+  return out;}
+function countIn(cfg){const m=METERS[cfg.meter],acc=accentsOf(cfg),gs=groups(cfg),out=[];let t=0,n=1,pi=0;
+  gs.forEach(g=>{for(let p=0;p<g/m.pulse;p++,pi++){if(p===0||acc[pi]>0)out.push({tick:t,level:acc[pi]>0?acc[pi]:0,n:p===0?n++:null});t+=m.pulse;}});return out;}
+// bows: every N notes / every beat-group / every measure; each segment restarts (k=0 -> chosen start bow); final long note own bow
+function bows(tl,mode,N){const out=[];let cur=null;
+  tl.ev.forEach((e,k)=>{const pv=tl.ev[k-1];let nb=!cur||e.long||pv.long||e.seg!==pv.seg;
+    if(!nb)nb=mode==="beat"?tl.gst.includes(e.tick%tl.M):mode==="measure"?e.tick%tl.M===0:cur.notes.length>=N;
+    if(nb){const k0=cur&&cur.seg===e.seg?cur.k+1:0;cur={notes:[],ev:[],long:!!e.long,start:e.i,seg:e.seg,k:k0,segFirst:k0===0,tick:e.tick};out.push(cur);}
+    cur.notes.push(e.n);cur.ev.push(e);});
+  out.forEach(b=>{b.ons=b.ev.map(e=>e.tick-b.tick);b.durs=b.ev.map(e=>e.dur);b.dur=b.ons[b.ons.length-1]+b.durs[b.durs.length-1];});return out;}
+function measures(tl,cfg){const m=METERS[cfg.meter],acc=accentsOf(cfg),ms={};
+  tl.ev.forEach(e=>{const mi=Math.floor(e.tick/tl.M),rt=e.tick%tl.M;let g=0;tl.gst.forEach((s,k)=>{if(rt>=s)g=k;});
+    (ms[mi]=ms[mi]||{idx:mi,notes:[]}).notes.push({...e,rt,g,acc:rt%m.pulse===0?acc[rt/m.pulse]:0});});
+  return Object.values(ms).sort((a,b)=>a.idx-b.idx);}
+const grName=cfg=>{const m=METERS[cfg.meter];return m.gr.length>1?"（"+grp(cfg).join("+")+"）":"";};
+const label=cfg=>cfg.meter?cfg.meter+grName(cfg)+" · "+seqOf(cfg).map(id=>PAT[id].n).join("→"):"";
+return {PAT,METERS,plen,groups,pulses,defaultAccents,accentsOf,patternsFor,defaultSeq,seqOf,apply,clicks,countIn,bows,measures,label,unit:cfg=>METERS[cfg.meter].unit,unitName:cfg=>METERS[cfg.meter].un};
+})();
+// ===== RH end =====
 /* Clef, accidental and notehead outlines: Bravura font by Steinberg Media Technologies GmbH, SIL Open Font License 1.1 (https://github.com/steinbergmedia/bravura). Paths in font units, 1 staff space = 250. */
 const GLY={"g": "M376 415C374 427 376 428 382 434C398 449 419 470 438 491C522 583 572 702 572 815C572 902 548 988 507 1048C492 1070 466 1098 455 1098C441 1098 410 1072 390 1050C316 968 292 843 292 739C292 681 299 616 306 575C308 563 309 561 297 551C233 498 164 437 112 373C43 287 0 194 0 87C0 -87 119 -252 364 -252C387 -252 413 -250 433 -246C444 -244 446 -243 448 -255C460 -322 475 -409 475 -456C475 -604 375 -622 316 -622C262 -622 236 -606 236 -593C236 -586 245 -583 268 -576C299 -567 335 -540 335 -482C335 -427 300 -380 239 -380C172 -380 132 -433 132 -495C132 -560 171 -658 322 -658C389 -658 519 -628 519 -458C519 -401 501 -306 490 -244C488 -232 489 -233 503 -227C604 -187 671 -102 671 11C671 139 577 252 430 252C404 252 404 252 401 270ZM470 943C503 943 530 916 530 861C530 792 497 728 419 650C403 634 379 611 356 591C349 585 345 586 343 599C339 625 337 659 337 691C337 847 409 943 470 943ZM361 262C364 243 364 244 346 238C258 208 201 129 201 44C201 -46 248 -110 316 -133C324 -136 336 -139 343 -139C351 -139 355 -134 355 -128C355 -121 347 -118 340 -115C298 -97 268 -54 268 -8C268 49 307 92 368 109C384 113 386 112 388 101L438 -197C440 -208 439 -208 424 -211C408 -214 388 -216 368 -216C193 -216 80 -119 80 20C80 79 90 158 173 252C233 319 279 356 326 394C336 402 338 401 340 390ZM430 103C428 115 429 118 441 117C522 110 589 42 589 -46C589 -109 551 -160 495 -188C483 -194 481 -194 479 -182Z", "c": "M230 482C230 496 223 503 209 503H208C194 503 187 496 187 482V-482C187 -496 194 -503 208 -503H209C223 -503 230 -496 230 -482V-44C230 -36 235 -37 239 -38C265 -45 307 -71 328 -184C331 -200 337 -209 347 -209C358 -209 363 -199 368 -182C381 -138 404 -89 475 -89C540 -89 558 -153 558 -284C558 -415 535 -474 452 -474C430 -474 410 -471 394 -466C377 -461 367 -454 367 -447C367 -442 383 -436 394 -432C414 -425 434 -405 434 -367C434 -323 405 -298 366 -298C323 -298 289 -327 289 -380C289 -443 344 -506 463 -506C627 -506 699 -391 699 -287C699 -149 623 -53 490 -53C461 -53 442 -58 429 -62C424 -64 418 -65 413 -65C409 -65 404 -64 400 -61C386 -52 364 -20 364 0C364 20 386 52 400 61C404 64 409 65 413 65C418 65 424 64 429 62C442 58 461 53 490 53C623 53 699 149 699 287C699 391 627 506 463 506C344 506 289 443 289 380C289 327 323 298 366 298C405 298 434 323 434 367C434 405 414 425 394 432C383 436 367 442 367 447C367 454 377 461 394 466C410 471 430 474 452 474C535 474 558 415 558 284C558 153 540 89 475 89C404 89 381 138 368 182C363 199 358 209 347 209C337 209 331 200 328 184C307 71 265 45 239 38C235 37 230 36 230 44ZM21 503C7 503 0 496 0 482V-482C0 -496 7 -503 21 -503H107C121 -503 128 -496 128 -482V482C128 496 121 503 107 503Z", "s": "M237 118C244 121 249 129 249 135V206C249 211 246 214 242 214C240 214 239 214 237 213C237 213 217 205 212 204C205 204 198 209 198 217V339C198 345 192 350 184 350C174 350 168 345 168 339V209C167 199 164 186 155 180C143 173 109 159 92 155C83 155 80 167 80 175V295C80 301 73 306 66 306C56 306 50 301 50 295V160C50 146 44 136 38 133C32 130 12 122 12 122C5 120 0 112 0 106V35C0 29 3 26 8 26C9 26 11 27 12 27C12 27 27 33 34 37C35 37 36 38 37 38C44 38 50 28 50 20V-79C50 -90 45 -99 39 -102C33 -104 12 -113 12 -113C5 -115 0 -123 0 -129V-200C0 -206 3 -209 8 -209C9 -209 11 -208 12 -208C12 -208 26 -202 35 -199C36 -198 37 -198 38 -198C45 -198 50 -209 50 -214V-337C50 -343 56 -348 63 -348C73 -348 80 -343 80 -337V-198C80 -185 85 -178 90 -176L151 -151C152 -151 154 -150 155 -150C163 -150 168 -162 168 -168V-293C168 -299 174 -304 181 -304C192 -304 198 -299 198 -293V-151C198 -143 202 -131 209 -128C216 -125 237 -117 237 -117C244 -114 249 -106 249 -100V-29C249 -24 246 -21 242 -21C240 -21 239 -21 237 -22L211 -32C205 -32 198 -26 198 -14V79C198 86 203 105 211 108ZM168 -45C162 -65 115 -85 92 -85C86 -85 81 -83 80 -80C78 -76 77 -54 77 -30C77 1 78 36 80 44C82 61 128 82 153 82C160 82 166 80 168 76C170 71 172 46 172 19C172 -8 170 -36 168 -45Z", "f": "M12 -170C15 -174 18 -175 21 -175C24 -175 27 -173 27 -173C57 -156 81 -129 106 -112C195 -50 226 11 226 57C226 114 182 150 136 153C129 153 122 152 115 150C104 147 92 143 81 136C75 131 64 122 59 122C57 122 56 122 54 123C47 126 43 133 43 140C44 162 50 402 50 422C50 433 41 439 31 439C17 439 1 429 0 411C0 411 4 -160 12 -170ZM47 -81C47 -81 44 -21 44 19C44 35 45 47 46 51C50 63 76 85 90 93C99 98 108 100 116 100C126 100 135 96 141 89C151 78 157 61 157 42C157 24 152 3 140 -18C127 -42 98 -74 68 -93C64 -95 61 -96 58 -96C49 -96 47 -86 47 -81Z", "n": "M141 181C139 181 138 180 137 180C137 180 73 157 47 157C41 157 37 158 37 162V329C37 336 31 341 25 341H12C5 341 0 336 0 329V-186C0 -192 3 -195 8 -195C9 -195 11 -194 12 -194C12 -194 14 -194 15 -193C29 -187 85 -163 114 -163C124 -163 131 -166 131 -174V-323C131 -330 136 -335 143 -335H156C162 -335 168 -330 168 -323V179C168 184 164 187 160 187C159 187 157 187 156 186ZM37 39C37 53 98 79 122 79C128 79 131 78 131 74V-29C131 -47 74 -70 49 -70C42 -70 37 -68 37 -64Z", "ss": "M190 -32C179 -26 143 -6 143 1C143 15 176 30 190 35C194 35 198 34 202 34C218 34 233 38 240 44C245 49 247 64 247 80C247 97 244 115 240 120C236 125 220 127 203 127C185 127 167 125 162 120C158 117 157 99 157 81C152 70 136 34 124 34C110 34 94 67 90 81C90 98 87 116 82 120C78 125 62 127 46 127C29 127 11 125 5 120C2 118 0 101 0 83C0 65 2 47 5 44C12 38 30 34 47 34C51 34 54 35 57 35C68 29 104 9 104 2C104 -11 72 -27 58 -32H48C30 -32 11 -34 5 -39C2 -42 0 -59 0 -77C0 -95 2 -113 5 -115C12 -121 28 -125 45 -125C60 -125 76 -122 82 -115C88 -110 90 -93 90 -77C90 -76 91 -74 92 -73C98 -59 110 -31 123 -31C136 -31 153 -63 157 -77C157 -95 158 -112 162 -115C169 -121 185 -125 202 -125C218 -125 233 -122 240 -115C245 -110 247 -95 247 -79C247 -62 244 -44 240 -39C235 -34 217 -32 200 -32Z", "ff": "M314 151C309 151 305 151 300 150C288 147 277 141 267 135C260 131 252 122 243 122C241 122 239 122 238 123C231 125 228 132 228 140C228 161 234 402 234 421C234 432 225 437 215 437C202 437 186 428 184 411C184 411 185 274 187 135C172 145 155 151 136 151H130C125 151 120 151 116 150C104 147 93 141 83 135C75 131 68 122 59 122C57 122 56 122 54 123C47 125 43 132 43 140C43 161 50 402 50 421C50 432 41 437 31 437C17 437 1 428 0 411C0 411 5 -161 12 -170C15 -174 18 -175 21 -175C24 -175 27 -173 27 -173C58 -157 83 -129 106 -112C143 -86 171 -59 190 -35C192 -110 194 -167 197 -170C200 -174 203 -175 205 -175C208 -175 211 -173 211 -173C242 -157 266 -129 289 -113C379 -50 411 11 411 57C411 113 367 150 320 151ZM141 -18C128 -42 99 -73 67 -93C64 -95 60 -96 58 -96C50 -96 47 -86 47 -80C47 -80 44 -21 44 18C44 34 45 46 46 50C50 63 77 85 91 93C100 98 109 100 117 100C127 100 135 97 141 90C151 78 157 61 157 41C157 23 152 2 141 -18ZM324 -18C312 -42 283 -73 251 -93C247 -95 244 -96 242 -96C234 -96 231 -86 231 -80C231 -80 228 -11 228 27C228 38 228 47 229 50C233 63 260 85 275 93C284 98 293 100 301 100C311 100 319 97 325 90C334 78 340 61 340 41C340 23 335 3 324 -18Z", "nb": "M97 -125C186 -125 295 -43 295 42C295 93 255 125 198 125C88 125 0 44 0 -42C0 -94 43 -125 97 -125Z", "nh": "M97 -125C262 -125 295 9 295 42C295 93 254 125 196 125C47 125 0 10 0 -42C0 -95 42 -125 97 -125ZM173 -46C128 -76 97 -87 75 -87C54 -87 42 -76 35 -64C32 -58 29 -51 29 -44C29 -22 51 5 120 45C170 74 201 84 221 84C240 84 251 75 258 63C261 57 264 51 264 44C264 24 243 0 173 -46Z"};
 // ===== staff (SMuFL glyphs from Bravura) =====
@@ -208,6 +273,66 @@ function layoutScore(list,fif,W,availH){
     return {H,svg:`<svg viewBox="0 0 ${W} ${H}" class="full" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:auto"><g fill="#111">${body}</g></svg>`};});
   return {W,pages:out,where,np};
 }
+// ===== rhythmic notation layout (meter, beams by beat group, dots, triplets, accents) =====
+function layoutRhythm(ms,fif,W,availH,opts){
+  const hw0=headerW(fif),tsW=2.6*SP,nw=d=>SP*(2.3+1.25*Math.sqrt(Math.min(d,96)/24));
+  const items=ms.map((m,mi)=>({mi,m,w:m.notes.reduce((a,o)=>a+nw(o.dur),0)+1.4*SP}));
+  const lines=[];let cur=[],cw=0;
+  items.forEach(it=>{const lw=W-8-hw0-4-(lines.length===0&&opts.ts?tsW:0);if(cur.length&&cw+it.w>lw){lines.push(cur);cur=[];cw=0;}cur.push(it);cw+=it.w;});
+  if(cur.length)lines.push(cur);
+  const perPage=Math.max(1,Math.floor(availH/SYS_H)),pages=[];lines.forEach((ln,li)=>{const p=Math.floor(li/perPage);(pages[p]=pages[p]||{systems:[]}).systems.push(ln);});
+  const keyAlt=l=>fif>0&&SO.slice(0,fif).includes(l)?1:fif<0&&FO.slice(0,-fif).includes(l)?-1:0;
+  const ln_=(x1,y1,x2,y2,w=1.3)=>`<line x1="${x1.toFixed(1)}" x2="${x2.toFixed(1)}" y1="${y1.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#222" stroke-width="${w}"/>`;
+  const beam=(x1,x2,y,up)=>{const y0=up?y:y-0.45*SP,y1=y0+0.45*SP;return `<path d="M${x1.toFixed(1)} ${y0.toFixed(1)}L${x2.toFixed(1)} ${y0.toFixed(1)}L${x2.toFixed(1)} ${y1.toFixed(1)}L${x1.toFixed(1)} ${y1.toFixed(1)}Z"/>`;};
+  const lv=d=>d<=12?2:1;
+  const where=[],np=[];let clef="alto";
+  const out=pages.map((pg,pi)=>{const H=pg.systems.length*SYS_H+4;let body="";
+    pg.systems.forEach((ln,si)=>{const top=si*SYS_H+SYS_TOP,Y=p=>top+(8-p)*SP/2;
+      const first=ln[0].m.notes[0].n;clef=first.clef||clef;if(L.step(first)>=37)clef="treble";
+      let x=8;{const[g,p]=CG(clef);body+=G(g,x,Y(p),SP);x+=3.2*SP;}
+      const n=Math.abs(fif),pos=(fif>0?SH:FL).slice(0,n).map(v=>v-(clef==="treble"?0:7));
+      pos.forEach(st=>{body+=G(fif>0?"s":"f",x,Y(st-BOT[clef]),SP);x+=1.1*SP;});x+=SP*0.6;
+      if(opts.ts&&pi===0&&si===0){const[a,b]=opts.ts.split("/");body+=`<g font-family="Georgia,serif" font-weight="700" font-size="${2.4*SP}" text-anchor="middle"><text x="${x+SP}" y="${top+1.85*SP}">${a}</text><text x="${x+SP}" y="${top+3.85*SP}">${b}</text></g>`;x+=tsW;}
+      let tmp=clef,nat=0;ln.forEach(it=>{nat+=it.w;it.m.notes.forEach(o=>{const c=o.n.clef||"alto";if(c!==tmp){tmp=c;nat+=2.4*SP;}});});
+      const last=pi===pages.length-1&&si===pg.systems.length-1;let k=(W-4-x)/nat;if(last&&k>1)k=Math.min(k,1.25);
+      for(let i=0;i<5;i++)body+=`<line x1="4" x2="${W-4}" y1="${top+i*SP}" y2="${top+i*SP}" stroke="#222" stroke-width="1.2"/>`;
+      body+=ln_(4,top,4,top+4*SP,1.5);
+      ln.forEach(it=>{const x0=x,st={};let s="";const heads=[];
+        it.m.notes.forEach(o=>{const nn=o.n,c=nn.clef||"alto";
+          if(c!==clef){clef=c;const[g,p]=CG(c);s+=G(g,x+2,Y(p),SP*0.72);x+=2.4*SP*k;}
+          const p=L.step(nn)-BOT[clef],y=Y(p),exp=st[L.step(nn)]??keyAlt(nn.L),xa=x+1.6*SP*Math.min(1,k),d=o.dur;
+          if(nn.a!==exp){s+=G(AG[nn.a],xa-1.4*SP,y,SP);st[L.step(nn)]=nn.a;}
+          for(let q=-2;q>=p;q-=2)s+=ln_(xa-4,Y(q),xa+SP*1.2+4,Y(q));
+          for(let q=10;q<=p;q+=2)s+=ln_(xa-4,Y(q),xa+SP*1.2+4,Y(q));
+          np[o.i]={page:pi,sys:si,x:xa,y0:top-3.2*SP,y1:top+7.2*SP};
+          s+=`<g class="nh" data-i="${o.i}" data-x="${xa.toFixed(1)}">${G(d>=96?"nh":"nb",xa,y,SP)}</g>`;
+          if([18,36,72,144].includes(d))s+=`<circle cx="${(xa+1.75*SP).toFixed(1)}" cy="${(p%2===0?y-SP*0.5:y).toFixed(1)}" r="${(SP*0.2).toFixed(1)}"/>`;
+          heads.push({o,xa,y,p});x+=nw(d)*k;});
+        // stems, beams (per beat group), flags, triplet numbers
+        const byG={};heads.forEach(h=>(byG[h.o.g]=byG[h.o.g]||[]).push(h));
+        const beamable=h=>h.o.dur<48&&h.o.dur!==32&&!h.o.long;
+        Object.values(byG).forEach(hs=>{const runs=[];let run=[];hs.forEach(h=>{if(beamable(h))run.push(h);else{if(run.length)runs.push(run);run=[];runs.push([h]);}});if(run.length)runs.push(run);
+          runs.forEach(r=>{
+            if(r.length===1){const h=r[0];if(h.o.dur>=192)return;h.up=h.p<4;const sx=h.up?h.xa+SP*1.15:h.xa+0.6,ey=h.up?h.y-3.5*SP:h.y+3.5*SP;s+=ln_(sx,h.up?h.y-1:h.y+1,sx,ey);
+              if(beamable(h))for(let f=0;f<lv(h.o.dur);f++){const fy=h.up?ey+f*0.9*SP:ey-f*0.9*SP,sg=h.up?1:-1;s+=`<path d="M${sx.toFixed(1)} ${fy.toFixed(1)}C${(sx+0.2*SP).toFixed(1)} ${(fy+sg*1.2*SP).toFixed(1)} ${(sx+1.2*SP).toFixed(1)} ${(fy+sg*1.4*SP).toFixed(1)} ${(sx+0.9*SP).toFixed(1)} ${(fy+sg*2.8*SP).toFixed(1)}" fill="none" stroke="#222" stroke-width="1.5"/>`;}
+              return;}
+            const up=r.reduce((a,h)=>a+h.p,0)/r.length<4,by=up?Math.min(...r.map(h=>h.y))-3.3*SP:Math.max(...r.map(h=>h.y))+3.3*SP,sxs=r.map(h=>up?h.xa+SP*1.15:h.xa+0.6);
+            r.forEach((h,q)=>{h.up=up;s+=ln_(sxs[q],up?h.y-1:h.y+1,sxs[q],by);});s+=beam(sxs[0],sxs[sxs.length-1],by,up);
+            const yb=up?by+0.8*SP:by-0.8*SP;
+            r.forEach((h,q)=>{if(lv(h.o.dur)<2)return;const L2=q>0&&lv(r[q-1].o.dur)>=2,R2=q<r.length-1&&lv(r[q+1].o.dur)>=2;
+              if(R2)s+=beam(sxs[q],sxs[q+1],yb,up);else if(!L2){const e=q>0?sxs[q]-SP:sxs[q]+SP;s+=beam(Math.min(sxs[q],e),Math.max(sxs[q],e),yb,up);}});});
+          if(hs.some(h=>h.o.dur===16||h.o.dur===32)){const up=hs[0].up!==false,ys=hs.map(h=>h.y),tx=(hs[0].xa+hs[hs.length-1].xa)/2+SP*0.6;
+            const ty=up?Math.min(Math.min(...ys)-4.4*SP,top-1.2*SP):Math.max(Math.max(...ys)+5.4*SP,top+6*SP);s+=`<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" font-size="${SP*1.1}" font-style="italic" font-family="Georgia,serif" text-anchor="middle">3</text>`;}});
+        if(opts.accMarks)heads.forEach(h=>{if(!(h.o.acc>0))return;const ax=h.xa+0.05*SP,ay=h.up?Math.max(h.y+1.5*SP,top+5*SP):Math.min(h.y-1.5*SP,top-1*SP);
+          s+=h.o.acc===2?`<path d="M${ax.toFixed(1)} ${(ay-0.4*SP).toFixed(1)}L${(ax+1.3*SP).toFixed(1)} ${ay.toFixed(1)}L${ax.toFixed(1)} ${(ay+0.4*SP).toFixed(1)}" fill="none" stroke="#8b3a3a" stroke-width="1.6"/>`
+                        :`<line x1="${ax.toFixed(1)}" x2="${(ax+1.2*SP).toFixed(1)}" y1="${ay.toFixed(1)}" y2="${ay.toFixed(1)}" stroke="#8b3a3a" stroke-width="1.6"/>`;});
+        x+=SP*k;const bx=Math.min(x,W-4),fin=it.m.notes.some(o=>o.long);
+        s+=ln_(bx,top,bx,top+4*SP,fin?3:1.5);if(fin)s+=ln_(bx-3.5,top,bx-3.5,top+4*SP,1);
+        body+=s;where[it.mi]={page:pi,x0:x0-2,x1:bx+2,y0:top-3.2*SP,y1:top+7.2*SP,sys:si};});
+      body+=`<text x="6" y="${top-1.6*SP}" font-size="10" fill="#999">${ln[0].m.idx+1}</text>`;});
+    return {H,svg:`<svg viewBox="0 0 ${W} ${H}" class="full" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:auto"><g fill="#111">${body}</g></svg>`};});
+  return {W,pages:out,where,np};
+}
 const BOWSVG={down:'<svg viewBox="0 0 24 24" aria-label="下弓"><path d="M2 22V2H22V22H18.6V6.6H5.4V22Z"/></svg>',up:'<svg viewBox="0 0 24 24" aria-label="上弓"><path d="M2 2H6.1L12 17.2L17.9 2H22L13.8 22H10.2Z"/></svg>'};
 if(typeof document!=="undefined"){
 const $=id=>document.getElementById(id);
@@ -216,8 +341,8 @@ L.MODES.forEach((M,m)=>{const o=document.createElement("option");o.value=m;o.tex
 ["C","C♯／D♭","D","E♭／D♯","E","F","F♯／G♭","G","A♭／G♯","A","B♭／A♯","B"].forEach((n,pc)=>{const o=document.createElement("option");o.value=pc;o.textContent=n;$("mtonic").appendChild(o);});
 let ctx,timer=null,next=0,beat=0,list=[],cin=0,fif=0,pos=0;
 $("bpm").oninput=()=>$("bpmv").textContent=$("bpm").value;
-function click(t,acc){const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=acc?1500:900;
-  g.gain.setValueAtTime(acc?0.9:0.5,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.05);o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+0.06);}
+function click(t,acc){const o=ctx.createOscillator(),g=ctx.createGain();const lv=acc===true?2:acc===false?0:acc,FG=lv===2?[1500,.9]:lv===1?[1200,.7]:lv==="sub"?[700,.22]:[900,.5];o.frequency.value=FG[0];
+  g.gain.setValueAtTime(FG[1],t);g.gain.exponentialRampToValueAtTime(0.001,t+0.05);o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+0.06);}
 function build(){const noteIdx=list.length&&list[pos]?list[pos].start:0;
   const N=Math.min(24,Math.max(1,parseInt($("n").value)||1));$("n").value=N;
   full=L.bows($("key").value,$("src").value,N);full.forEach((b,i)=>{b.k=i;b.seg=0;});fif=L.fifths(L.KEYS.find(k=>k.id===$("key").value));
@@ -227,6 +352,8 @@ function build(){const noteIdx=list.length&&list[pos]?list[pos].start:0;
     SEGS.forEach(([a,b],si)=>{let k=0;const e=b===fin?fin-1:b;
       for(let s=a;s<=e;s+=N){const z=Math.min(e,s+N-1);list.push({notes:all.slice(s,z+1),long:false,start:s,k,seg:si,segFirst:k===0});k++;}
       if(b===fin)list.push({notes:[all[fin]],long:true,start:fin,k,seg:si,segFirst:k===0});});}
+  RON=!!RS.meter;TL=null;FULLMS=null;miniKey="";if(RON){const cfg=rcfg(),flat=bs=>bs.flatMap(b=>b.notes.map((n,j)=>({i:b.start+j,seg:b.seg||0,long:b.long,n})));
+    FULLMS=RH.measures(RH.apply(flat(full),cfg),cfg);TL=RH.apply(flat(list),cfg);TL.clicks=RH.clicks(TL,cfg);TL.measures=RH.measures(TL,cfg);list=RH.bows(TL,RS.bowmode,N);}
   let j=list.findIndex(b=>b.start<=noteIdx&&noteIdx<b.start+b.notes.length);if(j<0)j=0;
   pos=j;$("pos").max=list.length-1;SC=null;}
 function show(i){pos=i;const b=list[i],p=i+1<=rangeB()?list[i+1]:($("end").value==="loop"?list[rangeA()]:null);
@@ -248,7 +375,7 @@ function rebuildSel(toStart){build();if(toStart)pos=0;show(Math.min(pos,list.len
 function availH(){const s=$("staff"),top=s.getBoundingClientRect().top+scrollY,bar=$("bar").offsetHeight,bl=$("below"),extra=bl?bl.offsetHeight:0;return Math.max(160,innerHeight-top-bar-extra-12);}
 // whole key laid out (measures never split across systems); v4 while playing: paginated to the viewport
 function ensureScore(){const cw=$("staff").clientWidth||360,spPx=cw<520?6.2:cw<900?7.4:8.6,W=Math.round(cw*SP/spPx),H=(timer&&!MINI)?availH()*SP/spPx-6:Infinity;
-  const key=[W,Math.round(H),full.length,$("key").value,$("src").value,$("n").value].join("|");if(SC&&key===scKey)return;scKey=key;SC=layoutScore(full,fif,W,H);curPage=-1;}
+  const key=[W,Math.round(H),full.length,$("key").value,$("src").value,$("n").value,RON?JSON.stringify(rcfg())+RS.accMarks+RS.bowmode:""].join("|");if(SC&&key===scKey)return;scKey=key;SC=RON?layoutRhythm(FULLMS,fif,W,H,{ts:RS.meter,accMarks:RS.accMarks}):layoutScore(full,fif,W,H);curPage=-1;}
 function setPage(p){if(p===curPage)return;curPage=p;const pg=SC.pages[p];$("page").innerHTML=pg.svg;
   const pl=$("pglbl");if(pl)pl.textContent=SC.pages.length>1?`第 ${p+1} / ${SC.pages.length} 頁`:"";
   const box=$("box");box.style.transition="none";requestAnimationFrame(()=>box.style.transition="");}
@@ -265,7 +392,10 @@ function drawRange(){const rg=$("rng");if(!SC||curPage<0){rg.innerHTML="";return
   if(!timer){if(selAnchor!=null)bands(selAnchor,selAnchor).forEach(s=>h+=R(s,"220,38,38","pend"));if(dragSeg)bands(dragSeg[0],dragSeg[1]).forEach(s=>h+=R(s,"220,38,38","pend"));}
   rg.innerHTML=h;}
 function placeBox(i){updRangeUI();const b=list[i];
-  if(MINI&&timer){const p=i+1<list.length?list[i+1]:($("end").value==="loop"?list[0]:null);$("page").innerHTML=staffSVG(b,p,fif);curPage=-1;
+  if(MINI&&timer){if(RON){const mi=Math.max(0,TL.measures.findIndex(m=>m.notes.some(o=>o.i===b.start))),cw=$("staff").clientWidth||360,mk="m"+mi+"|"+cw;
+      if(miniKey!==mk){miniKey=mk;$("page").innerHTML=layoutRhythm(TL.measures.slice(mi,mi+2),fif,Math.round(cw*SP/(cw<520?6.2:7.4)),Infinity,{ts:RS.meter,accMarks:RS.accMarks}).pages[0].svg;}
+      document.querySelectorAll("#page g.cnh").forEach(g=>g.classList.remove("cnh"));b.notes.forEach((_,j)=>{const g=document.querySelector(`#page g.nh[data-i="${b.start+j}"]`);if(g)g.classList.add("cnh");});}
+    else{const p=i+1<list.length?list[i+1]:($("end").value==="loop"?list[0]:null);$("page").innerHTML=staffSVG(b,p,fif);miniKey="";}curPage=-1;
     $("box").style.opacity=0;$("box2").style.opacity=0;$("rng").innerHTML="";$("mark").style.opacity=0;return;}
   ensureScore();const a0=b.start,a1=b.start+b.notes.length-1,f=SC.np[a0];if(!f)return;setPage(f.page);const W=SC.W,H=SC.pages[f.page].H;
   const parts=bands(a0,a1),p0=parts.find(s=>Math.abs(s.y0-f.y0)<1)||parts[0],box=$("box"),box2=$("box2");
@@ -275,13 +405,31 @@ function placeBox(i){updRangeUI();const b=list[i];
   const hs=[];for(let n=a0;n<=a1;n++){const g=document.querySelector(`#page g.nh[data-i="${n}"]`);if(g){g.classList.add("cnh");if(Math.abs(SC.np[n].y0-f.y0)<1)hs.push(g);}}
   const mk=$("mark");if(timer&&hs.length>1&&!b.long){const xs=hs.map(g=>+g.dataset.x+SP*0.6),spb=60/+$("bpm").value;
     mk.style.transition="none";mk.style.left=(xs[0]/W*100)+"%";mk.style.top=(f.y0/H*100)+"%";mk.style.height=((f.y1-f.y0)/H*100)+"%";mk.style.opacity=.9;
-    void mk.offsetWidth;mk.style.transition=`left ${spb*(hs.length-1)/b.notes.length}s linear`;mk.style.left=(xs[xs.length-1]/W*100)+"%";}
+    void mk.offsetWidth;mk.style.transition=`left ${RON?(b.ons[hs.length-1]||0)*rspt():spb*(hs.length-1)/b.notes.length}s linear`;mk.style.left=(xs[xs.length-1]/W*100)+"%";}
   else mk.style.opacity=0;
   drawRange();}
 let rz;addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(()=>{SC=null;show(pos);},150);});
+// ===== rhythm engine (meter-aware scheduling) =====
+let RON=false,TL=null,FULLMS=null,RT=null,miniKey="";const RS={meter:"",grouping:0,seq:[],accents:[],bowmode:"n",subdiv:false,accMarks:true};
+function rcfg(){return {meter:RS.meter,grouping:RS.grouping,seq:RS.seq,accents:RS.accents,subdiv:RS.subdiv};}
+function rspt(){return 60/+$("bpm").value/RH.unit(rcfg());}
+function rstart(){const spt=rspt(),b=list[pos],c0=ctx.currentTime+0.1,ci=$("countin").checked;
+  RT={spt,t0:c0+(ci?TL.M:0)*spt-b.tick*spt,ci:TL.clicks.findIndex(c=>c.tick>=b.tick),bi:pos,cq:ci?RH.countIn(rcfg()).map(c=>({t:c0+c.tick*spt,level:c.level,n:c.n})):[]};
+  if(RT.ci<0)RT.ci=TL.clicks.length;}
+function rclick(t,level,txt){click(t,level);if(window.onClickSched)window.onClickSched(performance.now()/1000+(t-ctx.currentTime));if(window.onRClick)window.onRClick(performance.now()/1000+(t-ctx.currentTime),level);
+  if(level!=="sub")setTimeout(()=>{if(txt)$("status").textContent=txt;flash(level===2);},Math.max(0,(t-ctx.currentTime)*1000));}
+function rtick(){const now=ctx.currentTime+0.1,spt=RT.spt;
+  while(RT.cq.length&&RT.cq[0].t<now){const c=RT.cq.shift();rclick(c.t,c.level,c.n?`預備 ${c.n}`:null);}
+  while(RT.ci<TL.clicks.length&&RT.t0+TL.clicks[RT.ci].tick*spt<now){const c=TL.clicks[RT.ci++];rclick(RT.t0+c.tick*spt,c.level);}
+  while(RT.bi<list.length&&RT.t0+list[RT.bi].tick*spt<now){const i=RT.bi++,b=list[i],t=RT.t0+b.tick*spt,ms=Math.max(0,(t-ctx.currentTime)*1000);
+    b.onsS=b.ons.map(v=>v*spt);b.dursS=b.durs.map(v=>v*spt);if(window.onBowSched)window.onBowSched(i,performance.now()/1000+(t-ctx.currentTime),b.dur*spt,list);
+    setTimeout(()=>{show(i);if(window.onBowShown)window.onBowShown(i);},ms);}
+  if(RT.bi>=list.length&&RT.ci>=TL.clicks.length){const tEnd=RT.t0+TL.total*spt;
+    if($("end").value==="loop"){if(tEnd<now){RT.t0=tEnd;RT.ci=0;RT.bi=0;if(window.onCycleEnd)window.onCycleEnd();}}
+    else if(!endT)endT=setTimeout(()=>{endT=null;stop(true)},Math.max(0,(tEnd-ctx.currentTime)*1000));}}
 let startBow=0,endT=null,lastToggle=0,nSched=0,gapAt=-1;
 
-function tick(){const spb=60/+$("bpm").value;
+function tick(){if(RON)return rtick();const spb=60/+$("bpm").value;
   while(next<ctx.currentTime+0.1){const t=next,ms=Math.max(0,(t-ctx.currentTime)*1000);
     if(cin>0){const k=4-cin;click(t,k===0);if(window.onClickSched)window.onClickSched(performance.now()/1000+(t-ctx.currentTime));setTimeout(()=>{$("status").textContent=`預備 ${k+1}`;flash(k===0)},ms);cin--;}
     else{if(beat>rangeB()){if($("end").value==="loop"){beat=rangeA();if(window.onCycleEnd)window.onCycleEnd();}else{if(!endT){endT=setTimeout(()=>{endT=null;stop(true)},ms+Math.round(spb*1000));}return;}}
@@ -290,10 +438,10 @@ function tick(){const spb=60/+$("bpm").value;
     next+=spb;}}
 function start(){if(timer)return;clearTimeout(endT);endT=null;if(!ctx||ctx.state==="closed")ctx=new (window.AudioContext||window.webkitAudioContext)();window.__ctx=ctx;
   try{const p=ctx.resume();if(p&&p.catch)p.catch(()=>{});const sb=ctx.createBufferSource();sb.buffer=ctx.createBuffer(1,1,22050);sb.connect(ctx.destination);sb.start(0);}catch(e){}build();if(window.onStart)window.onStart();
-  nSched=0;gapAt=-1;selAnchor=null;if(pos<rangeA()||pos>rangeB())pos=rangeA();beat=pos;startBow=pos;cin=$("countin").checked?4:0;next=ctx.currentTime+0.1;timer=setInterval(tick,25);$("go").textContent="停止";$("go").className="stop";show(pos);}
+  nSched=0;gapAt=-1;selAnchor=null;if(pos<rangeA()||pos>rangeB())pos=rangeA();beat=pos;startBow=pos;cin=$("countin").checked?4:0;next=ctx.currentTime+0.1;if(RON)rstart();timer=setInterval(tick,25);$("go").textContent="停止";$("go").className="stop";show(pos);}
 function stop(atEnd){clearTimeout(endT);endT=null;const was=!!timer;clearInterval(timer);timer=null;if(was&&window.onStop)setTimeout(()=>window.onStop(atEnd===true),0);$("go").textContent="開始";$("go").className="";show(pos);$("status").textContent="已停止";}
 function goto(i){i=Math.max(0,Math.min(list.length-1,i));if(timer)i=Math.max(rangeA(),Math.min(rangeB(),i));
-  if(timer){beat=i;startBow=-1;cin=0;next=ctx.currentTime+0.05;} // jump: next click plays bow i
+  if(timer){beat=i;startBow=-1;cin=0;next=ctx.currentTime+0.05;if(RON){RT.t0=ctx.currentTime+0.05-list[i].tick*RT.spt;RT.bi=i;RT.cq=[];RT.ci=TL.clicks.findIndex(c=>c.tick>=list[i].tick);if(RT.ci<0)RT.ci=TL.clicks.length;}} // jump: next click plays bow i
   show(i);}
 function toggle(){const t=performance.now();if(t-lastToggle<350)return;lastToggle=t;timer?stop():start();}
 $("go").onclick=e=>{e.stopPropagation();toggle();};window.__goto=i=>goto(i);window.__toggle=()=>toggle();window.__toggleRaw=()=>timer?stop():start();window.__playing=()=>!!timer;window.__rebuild=()=>{build();if(timer)beat=pos;show(pos);};
@@ -325,6 +473,26 @@ st.addEventListener("pointerup",e=>{if(!pd||timer){pd=null;return;}const h=pd.h;
   pd=null;st.dataset.swiped=1;setTimeout(()=>delete st.dataset.swiped,400);});
 $("rng").addEventListener("click",e=>{const x=e.target.closest(".rgx");if(!x)return;e.stopPropagation();SEGS.splice(+x.dataset.seg,1);selAnchor=null;rebuildSel(false);});
 $("rangeclr").onclick=e=>{e.stopPropagation();window.__clearRange();};
+// ===== 節奏設定 UI =====
+function rhyRender(){const on=!!RS.meter;$("rhyopts").style.display=on?"":"none";$("bpmlbl").textContent=on?`速度 BPM（${RH.unitName(rcfg())}）`:"速度 BPM";$("accentlbl").style.display=on?"none":"";
+  if(!on)return;const cfg=rcfg(),M=RH.METERS[RS.meter],e8=M.pulse===24;
+  $("grplbl").style.display=M.gr.length>1?"":"none";$("grouping").innerHTML=M.gr.map((g,k)=>`<option value="${k}"${k===RS.grouping?" selected":""}>${g.join("+")}</option>`).join("");
+  $("seq").innerHTML=RH.seqOf(cfg).map((id,k)=>`<span class="chip">${RH.PAT[id].n}${e8?`<small>（${RH.plen(id)/24}♪）</small>`:""}<b data-k="${k}" title="移除">✕</b></span>`).join('<span class="arr">→</span>');
+  $("patadd").innerHTML=RH.patternsFor(cfg).map(id=>`<option value="${id}">${RH.PAT[id].n}${e8?`（${RH.plen(id)/24}♪）`:""}</option>`).join("");
+  const acc=RH.accentsOf(cfg),g=M.gr[RS.grouping]||M.gr[0];let h="",pi=0;g.forEach(p=>{h+=`<span class="accg">`;for(let j=0;j<p;j++,pi++)h+=`<button class="accb a${acc[pi]}" data-p="${pi}">${pi+1}</button>`;h+=`</span>`;});$("accrow").innerHTML=h;}
+function rhyChanged(){if(timer)stop();build();SC=null;miniKey="";show(Math.min(pos,list.length-1));rhyRender();}
+$("meter").onchange=()=>{RS.meter=$("meter").value;RS.grouping=0;if(RS.meter){const c=rcfg();RS.seq=RH.defaultSeq(c);RS.accents=RH.defaultAccents(c);}rhyChanged();};
+$("grouping").onchange=()=>{RS.grouping=+$("grouping").value;RS.accents=RH.defaultAccents(rcfg());RS.seq=RH.seqOf(rcfg());rhyChanged();};
+$("patbtn").onclick=e=>{e.preventDefault();RS.seq=[...RS.seq,$("patadd").value];rhyChanged();};
+$("patclr").onclick=e=>{e.preventDefault();RS.seq=[];rhyChanged();};
+$("seq").onclick=e=>{const b=e.target.closest("b[data-k]");if(!b)return;RS.seq=RH.seqOf(rcfg()).filter((_,k)=>k!==+b.dataset.k);rhyChanged();};
+$("accrow").onclick=e=>{const b=e.target.closest(".accb");if(!b)return;e.preventDefault();const a=RH.accentsOf(rcfg()).slice(),p=+b.dataset.p;a[p]=a[p]===2?1:a[p]===1?0:2;RS.accents=a;rhyChanged();};
+$("accreset").onclick=e=>{e.preventDefault();RS.accents=RH.defaultAccents(rcfg());rhyChanged();};
+$("bowmode").onchange=()=>{RS.bowmode=$("bowmode").value;rhyChanged();};
+$("subdiv").onchange=()=>{RS.subdiv=$("subdiv").checked;rhyChanged();};
+$("accmarks").onchange=()=>{RS.accMarks=$("accmarks").checked;rhyChanged();};
+window.__rh=()=>({RS,TL,list,spt:rspt()});window.__rhLabel=()=>RS.meter?RH.label(rcfg()):"";
+window.__setRhythm=o=>{Object.assign(RS,o);$("meter").value=RS.meter;$("bowmode").value=RS.bowmode;$("subdiv").checked=RS.subdiv;$("accmarks").checked=RS.accMarks;rhyChanged();};
 ["key","src","n"].forEach(id=>$(id).onchange=()=>{build();if(timer){beat=pos;if(id!=="n"&&window.onStart)window.onStart();}show(pos);});
 $("end").onchange=()=>show(pos);$("startbow").onchange=()=>show(pos);$("showprev").onchange=()=>show(pos);
 function syncMode(){const isM=$("src").value==="mode";$("moderow").style.display=isM?"flex":"none";$("keylbl").style.display=isM?"none":"";
@@ -332,7 +500,7 @@ function syncMode(){const isM=$("src").value==="mode";$("moderow").style.display
 {const o=$("src").onchange;$("src").onchange=()=>{syncMode();o();};["mode","mtonic"].forEach(id=>$(id).onchange=()=>{syncMode();$("key").onchange();});}
 const q=new URLSearchParams(location.search);if(q.get("key"))$("key").value=q.get("key");if(q.get("n"))$("n").value=q.get("n");if(q.get("sb"))$("startbow").value=q.get("sb");{const k=L.KEYS.find(k=>k.id===$("key").value);if(k&&k.m==="mode"){$("src").value="mode";$("mode").value=k.mode;$("mtonic").value=k.pc;}syncMode();}
 {const CK="bowMetronome.countin.v2";try{if(localStorage.getItem(CK)==="0")$("countin").checked=false;}catch(e){}$("countin").addEventListener("change",()=>{try{localStorage.setItem(CK,$("countin").checked?"1":"0");}catch(e){}});}
-build();show(Math.min(+(q.get("i")||0),list.length-1));if(!q.get("i"))$("status").textContent="按「開始」";
+rhyRender();build();show(Math.min(+(q.get("i")||0),list.length-1));if(!q.get("i"))$("status").textContent="按「開始」";
 }
 </script><script>
 // ===== PD (pitch detection & matching; pure functions, node-testable) =====
@@ -355,7 +523,7 @@ const color=k=>({ok:"#16a34a",hi:"#dc2626",lo:"#2563eb",nd:"#9ca3af"})[k];
 const median=a=>{if(!a.length)return null;const b=[...a].sort((x,y)=>x-y),m=b.length>>1;return b.length%2?b[m]:(b[m-1]+b[m])/2;};
 // frames:[{t,f,clarity}], clicks:[t], bow:{t0,spb,midis:[...]} -> [cents|null]
 function matchBow(frames,clicks,bow,a4,opt={}){const k=bow.midis.length,slot=bow.spb/k,tol=opt.slotTol??0.015,acc=opt.accept??60,cg=opt.clickGuard??0.02,cl=opt.minClarity??0.8;
-  return bow.midis.map((m,j)=>{const s0=bow.t0+j*slot-tol,s1=bow.t0+(j+1)*slot+tol,ef=freq(m,a4),v=[];
+  return bow.midis.map((m,j)=>{const s0=bow.t0+(bow.ons?bow.ons[j]:j*slot)-tol,s1=bow.t0+(bow.ons?bow.ons[j]+bow.durs[j]:(j+1)*slot)+tol,ef=freq(m,a4),v=[];
     for(const fr of frames){if(fr.t<s0||fr.t>s1||fr.clarity<cl)continue;if(clicks.some(c=>Math.abs(fr.t-c)<cg))continue;
       const c=cents(fr.f,ef);if(Math.abs(c)<=acc)v.push(c);}
     const md=median(v);return md==null?null:Math.round(md*10)/10;});}
@@ -363,7 +531,8 @@ function counts(arr,tol){const r={ok:0,hi:0,lo:0,nd:0};arr.forEach(c=>r[classify
 function problems(notes,cs,nameFn,tol,top=5){const g={};notes.forEach((n,i)=>{const c=cs[i];if(c==null)return;const k=nameFn(n);(g[k]=g[k]||[]).push(c);});
   return Object.entries(g).map(([k,v])=>({note:k,avg:v.reduce((a,b)=>a+b,0)/v.length,n:v.length})).filter(o=>Math.abs(o.avg)>tol/2)
     .sort((a,b)=>Math.abs(b.avg)-Math.abs(a.avg)).slice(0,top);}
-return {yin,cents,freq,classify,color,median,matchBow,counts,problems};
+function slotAt(bow,dt){if(bow.ons){let j=0;bow.ons.forEach((o,k)=>{if(o<=dt)j=k;});return j;}return Math.min(bow.midis.length-1,Math.max(0,Math.floor(dt/(bow.spb/bow.midis.length))));}
+return {yin,cents,freq,classify,color,median,matchBow,counts,problems,slotAt};
 })();
 if(typeof module!=="undefined")module.exports=PD;
 // ===== PD end =====
@@ -375,7 +544,7 @@ const a4=()=>+$i("a4").value;
 $i("a4").oninput=()=>$i("a4v").textContent=$i("a4").value;
 $i("tol").oninput=()=>{$i("tolv").textContent=$i("tol").value;TOL=+$i("tol").value;applyColors();if($i("report").classList.contains("open"))renderReport();};
 function newCycle(){const kId=$i("key").value,kind=$i("src").value,{stream,final}=L.buildStream(kId,kind);
-  return {key:kId,kind,N:+$i("n").value,bpm:+$i("bpm").value,len:stream.length+1,notes:[...stream,final],cents:new Array(stream.length+1).fill(null),done:new Set(),live:{},segs:window.__segs?window.__segs():[],n:(IN.cycN=(IN.cycN||0)+1)};}
+  return {key:kId,kind,N:+$i("n").value,bpm:+$i("bpm").value,len:stream.length+1,notes:[...stream,final],cents:new Array(stream.length+1).fill(null),done:new Set(),live:{},segs:window.__segs?window.__segs():[],rh:window.__rhLabel?window.__rhLabel():"",n:(IN.cycN=(IN.cycN||0)+1)};}
 async function micOn(){try{
   const st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
   const ac=new (window.AudioContext||window.webkitAudioContext)();await ac.resume();const src=ac.createMediaStreamSource(st),an=ac.createAnalyser();an.fftSize=2048;src.connect(an);
@@ -392,7 +561,7 @@ function estimateLag(bs){let best=lagNow(),bestS=-1,cur=0;
   for(let q=0;q<=30;q++){const off=q/100;let s=0;
     for(const b of bs){const k=b.midis.length,slot=b.spb/k;
       for(const fr of IN.frames){const dt=fr.t-b.t0-off;if(dt<0||dt>=b.spb||fr.clarity<0.8)continue;
-        if(Math.abs(PD.cents(fr.f,PD.freq(b.midis[Math.floor(dt/slot)],a4())))<=50)s++;}}
+        if(Math.abs(PD.cents(fr.f,PD.freq(b.midis[PD.slotAt(b,dt)],a4())))<=50)s++;}}
     if(Math.abs(off-lagNow())<0.005)cur=s;if(s>bestS){bestS=s;best=off;}}
   if(bestS>=8&&bestS>cur*1.1)IN.lag=best;}
 function pollMic(){IN.an.getFloatTimeDomainData(IN.buf);const t=performance.now()/1000-IN.buf.length/IN.sr/2,r=PD.yin(IN.buf,IN.sr);
@@ -400,7 +569,7 @@ function pollMic(){IN.an.getFloatTimeDomainData(IN.buf);const t=performance.now(
   if(IN.cyc)IN.frames.push({t,f:r.f,clarity:r.clarity});if(IN.frames.length>6000)IN.frames.splice(0,1500);
   // live tuner: relative to the expected note of the slot this frame belongs to (latency-compensated), else nearest semitone
   const lag=lagNow();let lab,c;const cb=IN.bows.find(b=>t>=b.t0+lag&&t<b.t0+lag+b.spb);
-  if(cb){const j=Math.min(cb.midis.length-1,Math.floor((t-cb.t0-lag)/(cb.spb/cb.midis.length)));c=PD.cents(r.f,PD.freq(cb.midis[j],a4()));
+  if(cb){const j=PD.slotAt(cb,t-cb.t0-lag);c=PD.cents(r.f,PD.freq(cb.midis[j],a4()));
     if(Math.abs(c)>60){const nn=nearestName(r.f);lab=nn.name;c=nn.c;}else lab=L.name(cb.notes[j]);}
   else{const nn=nearestName(r.f);lab=nn.name;c=nn.c;}
   const col=PD.color(PD.classify(c,TOL));$i("tnote").textContent=lab;$i("tnote").style.color=col;$i("tcents").textContent=(c>0?"+":"")+c.toFixed(1)+" 音分";
@@ -419,12 +588,12 @@ function evalDue(force,only){const now=performance.now()/1000;
 window.onStart=()=>{IN.cyc=newCycle();IN.lastCyc=null;IN.frames=[];IN.clicks=[];IN.bows=[];IN.recent=[];$i("partial").style.display="none";applyColors();};
 window.onClickSched=t=>IN.clicks.push(t+outLat());
 window.onBowSched=(i,t0,spb,list)=>{t0+=outLat();IN.clicks.push(t0);if(!IN.cyc)IN.cyc=newCycle();const b=list[i];
-  IN.bows.push({i,t0,spb,start:b.start,notes:b.notes,midis:b.notes.map(L.midi),cyc:IN.cyc});};
+  IN.bows.push({i,t0,spb,start:b.start,notes:b.notes,midis:b.notes.map(L.midi),ons:b.onsS,durs:b.dursS,cyc:IN.cyc});};
 window.onBowShown=i=>{IN.curBow=i;};
 function finish(cyc,partial){if(!cyc)return;const cs=cyc.cents,sel=cyc.segs.length?cyc.segs.flatMap(([a,b])=>Array.from({length:b-a+1},(_,q)=>a+q)):cs.map((_,q)=>q);
-  if(!partial){const c=PD.counts(sel.map(q=>cs[q]),TOL);const h=hist();h.push({date:new Date().toLocaleString("zh-TW",{hour12:false}),key:L.KEYS.find(k=>k.id===cyc.key).label,N:cyc.N,bpm:cyc.bpm,...c});
+  if(!partial){const c=PD.counts(sel.map(q=>cs[q]),TOL);const h=hist();h.push({date:new Date().toLocaleString("zh-TW",{hour12:false}),key:L.KEYS.find(k=>k.id===cyc.key).label,N:cyc.N,bpm:cyc.bpm,rh:cyc.rh||"",...c});
     try{localStorage.setItem("bowMetronomeHistory",JSON.stringify(h.slice(-50)));}catch(e){console.warn("history not saved",e);}}
-  window.renderIntonationReport({cycle:cyc.n,cents:cs,partial,key:cyc.key,kind:cyc.kind,N:cyc.N,segs:cyc.segs});}
+  window.renderIntonationReport({cycle:cyc.n,cents:cs,partial,key:cyc.key,kind:cyc.kind,N:cyc.N,segs:cyc.segs,rh:cyc.rh});}
 window.onCycleEnd=()=>{const old=IN.cyc;IN.cyc=newCycle();IN.lastCyc=old;if(!IN.on)return;setTimeout(()=>{evalDue(true,old);finish(old,false);},(60/+$i("bpm").value)*1000+450);};
 window.onStop=atEnd=>{const cyc=IN.cyc;if(!IN.on||!cyc){IN.cyc=null;return;}
   // keep recording ~0.4 s so the (latency-delayed) last note is captured, then evaluate only this cycle's bows that actually started
@@ -432,9 +601,9 @@ window.onStop=atEnd=>{const cyc=IN.cyc;if(!IN.on||!cyc){IN.cyc=null;return;}
     if(atEnd)finish(cyc,false);else if(cyc.done.size){$i("partial").style.display="block";IN.partialCyc=cyc;}},400);};
 $i("showpartial").onclick=e=>{e.stopPropagation();finish(IN.partialCyc,true);$i("partial").style.display="none";};
 const hist=()=>{try{return JSON.parse(localStorage.getItem("bowMetronomeHistory")||"[]")}catch(e){return []}};
-function renderHist(){const h=hist().slice(-5).reverse();$i("rhist").innerHTML=h.length?`<table><tr><th>日期</th><th>調性</th><th>N</th><th>BPM</th><th>準</th><th>高</th><th>低</th><th>未測</th></tr>${h.map(r=>`<tr><td>${r.date}</td><td>${r.key}</td><td>${r.N}</td><td>${r.bpm}</td><td>${r.ok}</td><td>${r.hi}</td><td>${r.lo}</td><td>${r.nd}</td></tr>`).join("")}</table>`:"<span style='color:#999'>尚無紀錄</span>";}
+function renderHist(){const h=hist().slice(-5).reverse();$i("rhist").innerHTML=h.length?`<table><tr><th>日期</th><th>調性</th><th>N</th><th>BPM</th><th>準</th><th>高</th><th>低</th><th>未測</th></tr>${h.map(r=>`<tr><td>${r.date}</td><td>${r.key}${r.rh?`<br><small style="color:#999">${r.rh}</small>`:""}</td><td>${r.N}</td><td>${r.bpm}</td><td>${r.ok}</td><td>${r.hi}</td><td>${r.lo}</td><td>${r.nd}</td></tr>`).join("")}</table>`:"<span style='color:#999'>尚無紀錄</span>";}
 $i("histclear").onclick=e=>{e.stopPropagation();if(confirm("確定清除所有練習紀錄？")){localStorage.removeItem("bowMetronomeHistory");renderHist();}};
-$i("histcsv").onclick=e=>{e.stopPropagation();const h=hist(),rows=[["日期","調性","每弓音數","BPM","準","偏高","偏低","未偵測"],...h.map(r=>[r.date,r.key,r.N,r.bpm,r.ok,r.hi,r.lo,r.nd])];
+$i("histcsv").onclick=e=>{e.stopPropagation();const h=hist(),rows=[["日期","調性","每弓音數","BPM","節奏","準","偏高","偏低","未偵測"],...h.map(r=>[r.date,r.key,r.N,r.bpm,r.rh||"",r.ok,r.hi,r.lo,r.nd])];
   const csv="\ufeff"+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");const a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="練習紀錄.csv";a.click();};
 const dr=document.getElementById("drawer");document.getElementById("gear").onclick=e=>{e.stopPropagation();dr.classList.add("open")};
@@ -486,7 +655,7 @@ function renderReport(){const R=window.__intonation;if(!R)return;const keyId=R.k
     html+=lines.map(l=>reportLine(l,fif,sp,maxW)).join("");});
   document.getElementById("rscore").innerHTML=html;
   const cnt={ok:0,hi:0,lo:0,nd:0};all.forEach(o=>o.c==null?cnt.nd++:Math.abs(o.c)<=TOL?cnt.ok++:o.c>0?cnt.hi++:cnt.lo++);
-  document.getElementById("rtitle").textContent=`練習報告・第 ${R.cycle||1} 輪${R.partial?"（部分）":""}（${L.KEYS.find(k=>k.id===keyId).label}，每弓 ${N} 音${segs?`，${segs.length} 段`:""}）`;
+  document.getElementById("rtitle").textContent=`練習報告・第 ${R.cycle||1} 輪${R.partial?"（部分）":""}（${L.KEYS.find(k=>k.id===keyId).label}，每弓 ${N} 音${R.rh?`，${R.rh}`:""}${segs?`，${segs.length} 段`:""}）`;
   document.getElementById("rstats").textContent=`共 ${all.length} 音：準 ${cnt.ok}・偏高 ${cnt.hi}・偏低 ${cnt.lo}・未偵測 ${cnt.nd}（容許 ±${TOL} 音分）`;
   const pr=PD.problems(all.map(o=>o.n),all.map(o=>o.c),L.name,TOL);
   document.getElementById("rprob").innerHTML=pr.length?pr.map(p=>`<li><b>${p.note}</b>：平均 ${p.avg>0?"+":""}${p.avg.toFixed(1)} 音分（${p.avg>0?"偏高":"偏低"}，${p.n} 次）</li>`).join(""):"<li style='color:#999'>沒有明顯的問題音</li>";
