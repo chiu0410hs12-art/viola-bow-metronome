@@ -388,31 +388,40 @@ function rstart(){const spt=rspt(),b=list[pos],c0=ctx.currentTime+0.1,ci=$("coun
   RT={spt,t0:c0+(ci?TL.M:0)*spt-b.tick*spt,ci:TL.clicks.findIndex(c=>c.tick>=b.tick),bi:pos,cq:ci?RH.countIn(rcfg()).map(c=>({t:c0+c.tick*spt,level:c.level,n:c.n})):[]};
   if(RT.ci<0)RT.ci=TL.clicks.length;}
 function rclick(t,level,txt){click(t,level);if(window.onClickSched)window.onClickSched(performance.now()/1000+(t-ctx.currentTime));if(window.onRClick)window.onRClick(performance.now()/1000+(t-ctx.currentTime),level);
-  if(level!=="sub")setTimeout(()=>{if(txt)$("status").textContent=txt;flash(level===2);},Math.max(0,(t-ctx.currentTime)*1000));}
-function rtick(){const now=ctx.currentTime+0.1,spt=RT.spt;
+  if(level!=="sub")atAudio(t,()=>{if(txt)$("status").textContent=txt;flash(level===2);});}
+function rtick(){const now=ctx.currentTime+LA,spt=RT.spt;
   while(RT.cq.length&&RT.cq[0].t<now){const c=RT.cq.shift();rclick(c.t,c.level,c.n?`預備 ${c.n}`:null);}
   while(RT.ci<TL.clicks.length&&RT.t0+TL.clicks[RT.ci].tick*spt<now){const c=TL.clicks[RT.ci++];rclick(RT.t0+c.tick*spt,c.level);}
   while(RT.bi<list.length&&RT.t0+list[RT.bi].tick*spt<now){const i=RT.bi++,b=list[i],t=RT.t0+b.tick*spt,ms=Math.max(0,(t-ctx.currentTime)*1000);
     b.onsS=b.ons.map(v=>v*spt);b.dursS=b.durs.map(v=>v*spt);if(window.onBowSched)window.onBowSched(i,performance.now()/1000+(t-ctx.currentTime),b.dur*spt,list);
-    setTimeout(()=>{show(i);if(window.onBowShown)window.onBowShown(i);},ms);}
+    atAudio(t,()=>{show(i);if(window.onBowShown)window.onBowShown(i);});}
   if(RT.bi>=list.length&&RT.ci>=TL.clicks.length){const tEnd=RT.t0+TL.total*spt;
     if($("end").value==="loop"){if(tEnd<now){RT.t0=tEnd;RT.ci=0;RT.bi=0;if(window.onCycleEnd)window.onCycleEnd();}}
     else if(!endT)endT=setTimeout(()=>{endT=null;stop(true)},Math.max(0,(tEnd-ctx.currentTime)*1000));}}
+// one clock: audio is scheduled on ctx.currentTime with lookahead; visuals queued with their audio time and fired from rAF when heard
+const LA=0.15,VQ=[];let rafId=0;
+function atAudio(t,fn){let k=VQ.length;while(k&&VQ[k-1].t>t)k--;VQ.splice(k,0,{t,fn});kickV();}
+function outLat(){return ctx?Math.min(.3,(ctx.outputLatency||0)+(ctx.baseLatency||0)):0;}
+function heardNow(){const o=ctx.getOutputTimestamp&&ctx.getOutputTimestamp();if(o&&o.performanceTime>0&&o.contextTime>0)return o.contextTime+(performance.now()-o.performanceTime)/1000;return ctx.currentTime-outLat();}
+function flushV(){if(!ctx)return;const now=heardNow()+0.008;while(VQ.length&&VQ[0].t<=now){const e=VQ.shift();try{e.fn();}catch(err){console.error(err);}}}
+function vloop(){rafId=0;if(timer)tick();flushV();if(timer||VQ.length)kickV();}
+function kickV(){if(!rafId)rafId=requestAnimationFrame(vloop);}
+function stick(){tick();flushV();}
 let startBow=0,endT=null,lastToggle=-1e9,nSched=0,gapAt=-1;
 
 function tick(){if(RON)return rtick();const spb=60/+$("bpm").value;
-  while(next<ctx.currentTime+0.1){const t=next,ms=Math.max(0,(t-ctx.currentTime)*1000);
-    if(cin>0){const k=4-cin;click(t,k===0);if(window.onClickSched)window.onClickSched(performance.now()/1000+(t-ctx.currentTime));setTimeout(()=>{$("status").textContent=`預備 ${k+1}`;flash(k===0)},ms);cin--;}
+  while(next<ctx.currentTime+LA){const t=next,ms=Math.max(0,(t-ctx.currentTime)*1000);
+    if(cin>0){const k=4-cin;click(t,k===0);if(window.onClickSched)window.onClickSched(performance.now()/1000+(t-ctx.currentTime));atAudio(t,()=>{$("status").textContent=`預備 ${k+1}`;flash(k===0)});cin--;}
     else{if(beat>rangeB()){if($("end").value==="loop"){beat=rangeA();if(window.onCycleEnd)window.onCycleEnd();}else{if(!endT){endT=setTimeout(()=>{endT=null;stop(true)},ms+Math.round(spb*1000));}return;}}
-      if(SEGS.length&&list[beat].segFirst&&nSched>0&&gapAt!==beat){gapAt=beat;setTimeout(()=>{$("status").textContent="段落間休息";},ms);next+=spb;continue;}gapAt=-1;nSched++;
-      const i=beat,acc=$("accent").checked&&(i===startBow||!!list[i].segFirst);click(t,acc);if(window.onBowSched)window.onBowSched(i,performance.now()/1000+(t-ctx.currentTime),spb,list);setTimeout(()=>{show(i);flash(acc);if(window.onBowShown)window.onBowShown(i);},ms);beat++;}
+      if(SEGS.length&&list[beat].segFirst&&nSched>0&&gapAt!==beat){gapAt=beat;atAudio(t,()=>{$("status").textContent="段落間休息";});next+=spb;continue;}gapAt=-1;nSched++;
+      const i=beat,acc=$("accent").checked&&(i===startBow||!!list[i].segFirst);click(t,acc);if(window.onBowSched)window.onBowSched(i,performance.now()/1000+(t-ctx.currentTime),spb,list);atAudio(t,()=>{show(i);flash(acc);if(window.onBowShown)window.onBowShown(i);});beat++;}
     next+=spb;}}
 function start(){if(timer)return;clearTimeout(endT);endT=null;if(!ctx||ctx.state==="closed")ctx=new (window.AudioContext||window.webkitAudioContext)();window.__ctx=ctx;
   try{const p=ctx.resume();if(p&&p.catch)p.catch(()=>{});const sb=ctx.createBufferSource();sb.buffer=ctx.createBuffer(1,1,22050);sb.connect(ctx.destination);sb.start(0);}catch(e){}build();if(window.onStart)window.onStart();
-  nSched=0;gapAt=-1;selAnchor=null;if(pos<rangeA()||pos>rangeB())pos=rangeA();beat=pos;startBow=pos;cin=$("countin").checked?4:0;next=ctx.currentTime+0.1;if(RON)rstart();timer=setInterval(tick,25);$("go").textContent="停止";$("go").className="stop";show(pos);}
-function stop(atEnd){clearTimeout(endT);endT=null;const was=!!timer;clearInterval(timer);timer=null;if(was&&window.onStop)setTimeout(()=>window.onStop(atEnd===true),0);$("go").textContent="開始";$("go").className="";show(pos);$("status").textContent="已停止";}
+  nSched=0;gapAt=-1;selAnchor=null;if(pos<rangeA()||pos>rangeB())pos=rangeA();beat=pos;startBow=pos;cin=$("countin").checked?4:0;next=ctx.currentTime+0.1;if(RON)rstart();timer=setInterval(stick,25);kickV();$("go").textContent="停止";$("go").className="stop";show(pos);}
+function stop(atEnd){VQ.length=0;clearTimeout(endT);endT=null;const was=!!timer;clearInterval(timer);timer=null;if(was&&window.onStop)setTimeout(()=>window.onStop(atEnd===true),0);$("go").textContent="開始";$("go").className="";show(pos);$("status").textContent="已停止";}
 function goto(i){i=Math.max(0,Math.min(list.length-1,i));if(timer)i=Math.max(rangeA(),Math.min(rangeB(),i));
-  if(timer){beat=i;startBow=-1;cin=0;next=ctx.currentTime+0.05;if(RON){RT.t0=ctx.currentTime+0.05-list[i].tick*RT.spt;RT.bi=i;RT.cq=[];RT.ci=TL.clicks.findIndex(c=>c.tick>=list[i].tick);if(RT.ci<0)RT.ci=TL.clicks.length;}} // jump: next click plays bow i
+  if(timer){VQ.length=0;beat=i;startBow=-1;cin=0;next=ctx.currentTime+0.05;if(RON){RT.t0=ctx.currentTime+0.05-list[i].tick*RT.spt;RT.bi=i;RT.cq=[];RT.ci=TL.clicks.findIndex(c=>c.tick>=list[i].tick);if(RT.ci<0)RT.ci=TL.clicks.length;}} // jump: next click plays bow i
   show(i);}
 function toggle(){const t=performance.now();if(t-lastToggle<350)return;lastToggle=t;timer?stop():start();}
 $("go").onclick=e=>{e.stopPropagation();toggle();};window.__goto=i=>goto(i);window.__toggle=()=>toggle();window.__toggleRaw=()=>timer?stop():start();window.__playing=()=>!!timer;window.__rebuild=()=>{build();if(timer)beat=pos;show(pos);};
@@ -519,7 +528,7 @@ async function micOn(){try{
   const st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
   const ac=new (window.AudioContext||window.webkitAudioContext)();await ac.resume();const src=ac.createMediaStreamSource(st),an=ac.createAnalyser();an.fftSize=2048;src.connect(an);
   Object.assign(IN,{stream:st,ac,an,buf:new Float32Array(2048),sr:ac.sampleRate,on:true});$i("micstat").textContent="麥克風：已啟用（"+ac.sampleRate+" Hz）";$i("tuner").style.display="flex";dispatchEvent(new Event("resize"));
-  IN.poll=setInterval(pollMic,15);}catch(e){$i("pdon").checked=false;$i("micstat").textContent="麥克風無法啟用："+e.message;}}
+  IN.poll=setInterval(pollMic,20);}catch(e){$i("pdon").checked=false;$i("micstat").textContent="麥克風無法啟用："+e.message;}}
 function micOff(){clearInterval(IN.poll);if(IN.stream)IN.stream.getTracks().forEach(t=>t.stop());if(IN.ac)IN.ac.close();IN.on=false;$i("tuner").style.display="none";dispatchEvent(new Event("resize"));$i("micstat").textContent="麥克風：未啟用";}
 $i("pdon").onchange=()=>$i("pdon").checked?micOn():micOff();
 function nearestName(f){const m=69+12*Math.log2(f/a4()),r=Math.round(m),N=["C","C♯","D","E♭","E","F","F♯","G","A♭","A","B♭","B"];return {name:N[(r%12+12)%12]+(Math.floor(r/12)-1),c:(m-r)*100};}
