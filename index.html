@@ -47,7 +47,7 @@ body{background:#fbf8f1;color:#222;min-height:100vh}
 </style></head><body><div id="top"><span style="visibility:hidden">極簡練習模式 · Flesch No.5</span><span><button id="repbtn">📊 報告</button><button id="gear">⚙ 設定</button></span></div>
 <div id="drawer"><h2>設定 <button id="close" class="hb">✕</button></h2><label id="keylbl">調性<select id="key"></select></label>
 <label>曲目<select id="src"><option value="full">音階＋琶音</option><option value="scale">只有音階</option><option value="mode">調式音階</option></select></label>
-<div id="moderow" style="display:none;flex-direction:column;gap:12px"><label>調式<select id="mode"></select></label><label>主音<select id="mtonic"></select></label></div>
+<div id="moderow" style="display:none;flex-direction:column;gap:12px"><label>調式<select id="mode"></select></label><label>主音<select id="mtonic"></select></label><div id="modenote" style="font-size:13px;color:#888;margin-top:-6px"></div></div>
 <label>每弓音數 N（1–24）<input id="n" type="number" min="1" max="24" value="6"></label>
 <label><span id="bpmlbl">速度 BPM</span>：<span id="bpmv">60</span><input id="bpm" type="range" min="30" max="200" value="60"></label>
 <details id="rhy"><summary>節奏設定</summary>
@@ -109,6 +109,9 @@ const MODES=[["Ionian","伊奧尼亞",0],["Dorian","多利安",-2],["Phrygian","
 function modeTonic(pc,m){const c=[];for(let l=0;l<7;l++)for(const a of[-1,0,1])if(((NAT[l]+a)%12+12)%12===pc)c.push({l,a,f:FIF[l]+7*a+MODES[m].shift});
   c.sort((x,y)=>Math.abs(x.f)-Math.abs(y.f)||Math.abs(x.a)-Math.abs(y.a)||y.f-x.f);const b=c[0];return LET[b.l]+(b.a>0?"#":b.a<0?"b":"");}
 MODES.forEach((M,m)=>{for(let pc=0;pc<12;pc++){const t=modeTonic(pc,m);KEYS.push({id:t+"-"+M.en.toLowerCase(),t,m:"mode",mode:m,pc,label:t.replace("#","♯").replace("b","♭")+" "+M.zh+"（"+M.en+"）"});}});
+function modeNote(k){const t=T(k.t),mf=FIF[t.L]+7*t.a,sf=mf+MODES[k.mode].shift,acc=(l,f)=>Math.ceil((f-1-FIF[l])/7),tn=k.t.replace("#","♯").replace("b","♭"),dn=[],nm=[];let dir="";
+  for(let i=1;i<7;i++){const l=(t.L+i)%7,d=acc(l,sf)-acc(l,mf);if(d){dir=d<0?"降":"升";dn.push(i+1);nm.push(LET[l]+ACC[acc(l,sf)]);}}
+  return dn.length?tn+"大調"+dir+dn.join("、")+"音（"+nm.join("、")+"）":tn+"大調（不變）";}
 const modeKeyId=(pc,m)=>KEYS.find(k=>k.m==="mode"&&k.pc===+pc&&k.mode===+m).id;
 function modeStream(k){const t=T(k.t),sm=MODES[k.mode].semis,span=midi(t)+36<=88?3:2,top=7*span,s=[];   // 3 octaves if the top stays <= E6, else 2
   for(let d=0;d<=top;d++)s.push({...deg(t,d,sm),sec:"調式音階"});for(let d=top-1;d>0;d--)s.push({...deg(t,d,sm),sec:"調式音階"});
@@ -129,7 +132,7 @@ function buildStream(keyId,kind){
 function bows(keyId,kind,N){const{stream,final}=buildStream(keyId,kind),b=[];
   for(let i=0;i<stream.length;i+=N)b.push({notes:stream.slice(i,i+N),long:false,start:i});b.push({notes:[final],long:true,start:stream.length});return b;}
 function bowDir(i,startUp){return ((i%2===0)!==!!startUp)?"down":"up";}
-return {KEYS,MODES,modeKeyId,buildStream,bows,name,step,fifths,midi,bowDir};
+return {KEYS,MODES,modeKeyId,modeNote,buildStream,bows,name,step,fifths,midi,bowDir};
 })();
 if(typeof module!=="undefined")module.exports=L;
 // ===== RH (meter / rhythm patterns / accents; pure, node-testable) =====
@@ -507,7 +510,7 @@ window.__setRhythm=o=>{Object.assign(RS,o);if(RS.meter&&!RH.ENABLED.includes(RS.
 ["key","src","n"].forEach(id=>$(id).onchange=()=>{build();if(timer){beat=pos;if(id!=="n"&&window.onStart)window.onStart();}show(pos);});
 $("end").onchange=()=>show(pos);$("startbow").onchange=()=>show(pos);$("showprev").onchange=()=>show(pos);
 function syncMode(){const isM=$("src").value==="mode";$("moderow").style.display=isM?"flex":"none";$("keylbl").style.display=isM?"none":"";
-  const cur=L.KEYS.find(k=>k.id===$("key").value);[...$("key").options].forEach(o=>{if(o.dataset.mode)o.remove();});if(isM){const mk=L.KEYS.find(k=>k.id===L.modeKeyId($("mtonic").value,$("mode").value));const o=document.createElement("option");o.value=mk.id;o.textContent=mk.label;o.dataset.mode=1;$("key").appendChild(o);$("key").value=mk.id;}else if(cur&&cur.m==="mode")$("key").value=L.KEYS[0].id;}
+  const cur=L.KEYS.find(k=>k.id===$("key").value);[...$("key").options].forEach(o=>{if(o.dataset.mode)o.remove();});if(isM){const mk=L.KEYS.find(k=>k.id===L.modeKeyId($("mtonic").value,$("mode").value));const o=document.createElement("option");o.value=mk.id;o.textContent=mk.label;o.dataset.mode=1;$("key").appendChild(o);$("key").value=mk.id;$("modenote").textContent=L.MODES[mk.mode].en+"："+L.modeNote(mk);}else if(cur&&cur.m==="mode")$("key").value=L.KEYS[0].id;}
 {const o=$("src").onchange;$("src").onchange=()=>{syncMode();o();};["mode","mtonic"].forEach(id=>$(id).onchange=()=>{syncMode();$("key").onchange();});}
 const q=new URLSearchParams(location.search);if(q.get("key")){const qk=L.KEYS.find(k=>k.id===q.get("key"));if(qk&&qk.m==="mode"){const o=document.createElement("option");o.value=qk.id;o.dataset.mode=1;$("key").appendChild(o);}$("key").value=q.get("key");}if(q.get("n"))$("n").value=q.get("n");if(q.get("sb"))$("startbow").value=q.get("sb");{const k=L.KEYS.find(k=>k.id===$("key").value);if(k&&k.m==="mode"){$("src").value="mode";$("mode").value=k.mode;$("mtonic").value=k.pc;}syncMode();}
 {const CK="bowMetronome.countin.v2";try{if(localStorage.getItem(CK)==="0")$("countin").checked=false;}catch(e){}$("countin").addEventListener("change",()=>{try{localStorage.setItem(CK,$("countin").checked?"1":"0");}catch(e){}});}
