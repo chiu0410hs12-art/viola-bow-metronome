@@ -109,9 +109,9 @@ const MODES=[["Ionian","伊奧尼亞",0],["Dorian","多利安",-2],["Phrygian","
 function modeTonic(pc,m){const c=[];for(let l=0;l<7;l++)for(const a of[-1,0,1])if(((NAT[l]+a)%12+12)%12===pc)c.push({l,a,f:FIF[l]+7*a+MODES[m].shift});
   c.sort((x,y)=>Math.abs(x.f)-Math.abs(y.f)||Math.abs(x.a)-Math.abs(y.a)||y.f-x.f);const b=c[0];return LET[b.l]+(b.a>0?"#":b.a<0?"b":"");}
 MODES.forEach((M,m)=>{for(let pc=0;pc<12;pc++){const t=modeTonic(pc,m);KEYS.push({id:t+"-"+M.en.toLowerCase(),t,m:"mode",mode:m,pc,label:t.replace("#","♯").replace("b","♭")+" "+M.zh+"（"+M.en+"）"});}});
-function modeNote(k){const t=T(k.t),mf=FIF[t.L]+7*t.a,sf=mf+MODES[k.mode].shift,acc=(l,f)=>Math.ceil((f-1-FIF[l])/7),tn=k.t.replace("#","♯").replace("b","♭"),dn=[],nm=[];let dir="";
+function modeNote(k){const t=T(k.t),mi=[1,2,5,6].includes(k.mode),mf=FIF[t.L]+7*t.a-(mi?3:0),q=mi?"小調":"大調",sf=FIF[t.L]+7*t.a+MODES[k.mode].shift,acc=(l,f)=>Math.ceil((f-1-FIF[l])/7),tn=k.t.replace("#","♯").replace("b","♭"),dn=[],nm=[];let dir="";
   for(let i=1;i<7;i++){const l=(t.L+i)%7,d=acc(l,sf)-acc(l,mf);if(d){dir=d<0?"降":"升";dn.push(i+1);nm.push(LET[l]+ACC[acc(l,sf)]);}}
-  return dn.length?tn+"大調"+dir+dn.join("、")+"音（"+nm.join("、")+"）":tn+"大調（不變）";}
+  return dn.length?tn+q+dir+dn.join("、")+"音（"+nm.join("、")+"）":tn+q+"（不變）";}
 const modeKeyId=(pc,m)=>KEYS.find(k=>k.m==="mode"&&k.pc===+pc&&k.mode===+m).id;
 function modeStream(k){const t=T(k.t),sm=MODES[k.mode].semis,span=midi(t)+36<=88?3:2,top=7*span,s=[];   // 3 octaves if the top stays <= E6, else 2
   for(let d=0;d<=top;d++)s.push({...deg(t,d,sm),sec:"調式音階"});for(let d=top-1;d>0;d--)s.push({...deg(t,d,sm),sec:"調式音階"});
