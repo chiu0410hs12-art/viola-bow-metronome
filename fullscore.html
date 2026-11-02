@@ -44,10 +44,10 @@ body{background:#fbf8f1;color:#222;min-height:100vh}
 #tmid{position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:#555}#tneedle{position:absolute;top:-4px;width:6px;height:22px;border-radius:3px;background:#9ca3af;left:50%;transform:translateX(-50%);transition:left .06s}
 #partial{text-align:center;color:#8b3a3a;margin:6px}#rprob{font-size:.9rem;color:#444;margin:4px 0 8px;padding-left:22px}
 #rhist table{width:100%;border-collapse:collapse;font-size:.8rem}#rhist td,#rhist th{border-bottom:1px solid #eee;padding:3px;text-align:left}
-</style></head><body><div id="top"><span style="visibility:hidden">極簡練習模式 · Flesch No.5</span><span><button id="repbtn">📊 報告</button><button id="gear">⚙ 設定</button></span></div>
+#rangelbl.tip{background:#eef4ff;border-radius:8px;padding:4px 8px;cursor:pointer}</style></head><body><div id="top"><span style="visibility:hidden">極簡練習模式 · Flesch No.5</span><span><button id="repbtn">📊 報告</button><button id="gear">⚙ 設定</button></span></div>
 <div id="drawer"><h2>設定 <button id="close" class="hb">✕</button></h2><label id="keylbl">調性<select id="key"></select></label>
 <label>曲目<select id="src"><option value="full">音階＋琶音</option><option value="scale">只有音階</option><option value="mode">調式音階</option></select></label>
-<div id="moderow" style="display:none;flex-direction:column;gap:12px"><label>調式<select id="mode"></select></label><label>主音<select id="mtonic"></select></label><div id="modenote" style="font-size:13px;color:#888;margin-top:-6px"></div></div>
+<div id="moderow" style="display:none;flex-direction:column;gap:12px"><label>調式<select id="mode"></select></label><label>主音<select id="mtonic"></select></label><div id="modenote" style="display:none"></div></div>
 <label>每弓音數 N（1–24）<input id="n" type="number" min="1" max="24" value="6"></label>
 <label><span id="bpmlbl">速度 BPM</span>：<span id="bpmv">60</span><input id="bpm" type="range" min="30" max="200" value="60"></label>
 <details id="rhy"><summary>節奏設定</summary>
@@ -354,8 +354,11 @@ function setPage(p){if(p===curPage)return;curPage=p;const pg=SC.pages[p];$("page
   const pl=$("pglbl");if(pl)pl.textContent=SC.pages.length>1?`第 ${p+1} / ${SC.pages.length} 頁`:"";
   const box=$("box");box.style.transition="none";requestAnimationFrame(()=>box.style.transition="");}
 const segTotal=()=>SEGS.reduce((a,[x,y])=>a+y-x+1,0);
-function updRangeUI(){const el=$("rangelbl");if(!el)return;$("rangebar").style.display=timer?"none":"";
-  el.textContent=selAnchor!=null?`起點：第 ${selAnchor+1} 音 → 請點結束音（再點同一音＝只選這一音）`:SEGS.length?`練習範圍：${SEGS.length} 段，共 ${segTotal()} 音 · 點段內或 ✕ 可移除`:`練習範圍：全曲 · 點起始音、再點結束音（或拖曳）加入一段，可加多段`;
+function modeHint(){const k=$("src").value==="mode"&&L.KEYS.find(x=>x.id===$("key").value);return k&&k.m==="mode"?L.MODES[k.mode].en+"："+L.modeNote(k):`練習範圍：全曲`;}
+const TIPK="bowMetronome.rangeTipSeen";let tipSeen=false;try{tipSeen=localStorage.getItem(TIPK)==="1";}catch(e){}
+function tipDone(){if(tipSeen)return;tipSeen=true;try{localStorage.setItem(TIPK,"1");}catch(e){}updRangeUI();}
+function updRangeUI(){const el=$("rangelbl");if(!el)return;if(SEGS.length&&!tipSeen){tipSeen=true;try{localStorage.setItem(TIPK,"1");}catch(e){}}if(!el.dataset.tip){el.dataset.tip=1;el.addEventListener("click",e=>{if(!tipSeen){e.stopPropagation();tipDone();}});}el.classList.toggle("tip",!tipSeen&&!SEGS.length&&selAnchor==null);$("rangebar").style.display=timer?"none":"";
+  el.textContent=selAnchor!=null?`起點：第 ${selAnchor+1} 音 → 請點結束音（再點同一音＝只選這一音）`:SEGS.length?`練習範圍：${SEGS.length} 段，共 ${segTotal()} 音`:tipSeen?modeHint():`💡 點起始音、再點結束音（或拖曳）可加入練習段，可加多段　✕`;
   $("rangeclr").style.display=(SEGS.length||selAnchor!=null)?"":"none";}
 const SEGCOL=["37,99,235","147,51,234","13,148,136","202,138,4"];
 function bands(a,b){const out={};for(let n=a;n<=b;n++){const q=SC.np[n];if(!q||q.page!==curPage)continue;const s=out[q.sys];if(!s)out[q.sys]={x0:q.x,x1:q.x,y0:q.y0,y1:q.y1};else{s.x0=Math.min(s.x0,q.x);s.x1=Math.max(s.x1,q.x);}}
@@ -419,7 +422,7 @@ function tick(){if(RON)return rtick();const spb=60/+$("bpm").value;
       if(SEGS.length&&list[beat].segFirst&&nSched>0&&gapAt!==beat){gapAt=beat;atAudio(t,()=>{$("status").textContent="段落間休息";});next+=spb;continue;}gapAt=-1;nSched++;
       const i=beat,acc=$("accent").checked&&(i===startBow||!!list[i].segFirst);click(t,acc);if(window.onBowSched)window.onBowSched(i,performance.now()/1000+(t-ctx.currentTime),spb,list);atAudio(t,()=>{show(i);flash(acc);if(window.onBowShown)window.onBowShown(i);});beat++;}
     next+=spb;}}
-function start(){if(timer)return;clearTimeout(endT);endT=null;if(!ctx||ctx.state==="closed")ctx=new (window.AudioContext||window.webkitAudioContext)();window.__ctx=ctx;
+function start(){if(timer)return;tipDone();clearTimeout(endT);endT=null;if(!ctx||ctx.state==="closed")ctx=new (window.AudioContext||window.webkitAudioContext)();window.__ctx=ctx;
   try{const p=ctx.resume();if(p&&p.catch)p.catch(()=>{});const sb=ctx.createBufferSource();sb.buffer=ctx.createBuffer(1,1,22050);sb.connect(ctx.destination);sb.start(0);}catch(e){}build();if(window.onStart)window.onStart();
   nSched=0;gapAt=-1;selAnchor=null;if(pos<rangeA()||pos>rangeB())pos=rangeA();beat=pos;startBow=pos;cin=$("countin").checked?4:0;next=ctx.currentTime+0.1;if(RON)rstart();timer=setInterval(stick,25);kickV();$("go").textContent="停止";$("go").className="stop";show(pos);}
 function stop(atEnd){VQ.length=0;clearTimeout(endT);endT=null;const was=!!timer;clearInterval(timer);timer=null;if(was&&window.onStop)setTimeout(()=>window.onStop(atEnd===true),0);$("go").textContent="開始";$("go").className="";show(pos);$("status").textContent="已停止";}
@@ -477,7 +480,7 @@ window.__rh=()=>({RS,TL,list,spt:rspt()});window.__rhLabel=()=>RS.meter?RH.label
 window.__setRhythm=o=>{Object.assign(RS,o);if(RS.meter&&!RH.ENABLED.includes(RS.meter)){RS.meter="";RS.grouping=0;}$("meter").value=RS.meter;$("bowmode").value=RS.bowmode;$("subdiv").checked=RS.subdiv;$("accmarks").checked=RS.accMarks;rhyChanged();};
 ["key","src","n"].forEach(id=>$(id).onchange=()=>{build();if(timer){beat=pos;if(id!=="n"&&window.onStart)window.onStart();}SC=null;show(pos);});
 $("end").onchange=()=>show(pos);$("startbow").onchange=()=>show(pos);$("showprev").onchange=()=>show(pos);
-function syncMode(){const isM=$("src").value==="mode";$("moderow").style.display=isM?"flex":"none";$("keylbl").style.display=isM?"none":"";
+function syncMode(){setTimeout(()=>{try{updRangeUI()}catch(e){}},0);const isM=$("src").value==="mode";$("moderow").style.display=isM?"flex":"none";$("keylbl").style.display=isM?"none":"";
   const cur=L.KEYS.find(k=>k.id===$("key").value);[...$("key").options].forEach(o=>{if(o.dataset.mode)o.remove();});if(isM){const mk=L.KEYS.find(k=>k.id===L.modeKeyId($("mtonic").value,$("mode").value));const o=document.createElement("option");o.value=mk.id;o.textContent=mk.label;o.dataset.mode=1;$("key").appendChild(o);$("key").value=mk.id;$("modenote").textContent=L.MODES[mk.mode].en+"："+L.modeNote(mk);}else if(cur&&cur.m==="mode")$("key").value=L.KEYS[0].id;}
 {const o=$("src").onchange;$("src").onchange=()=>{syncMode();o();};["mode","mtonic"].forEach(id=>$(id).onchange=()=>{syncMode();$("key").onchange();});}
 const q=new URLSearchParams(location.search);if(q.get("key")){const qk=L.KEYS.find(k=>k.id===q.get("key"));if(qk&&qk.m==="mode"){const o=document.createElement("option");o.value=qk.id;o.dataset.mode=1;$("key").appendChild(o);}$("key").value=q.get("key");}if(q.get("n"))$("n").value=q.get("n");if(q.get("sb"))$("startbow").value=q.get("sb");{const k=L.KEYS.find(k=>k.id===$("key").value);if(k&&k.m==="mode"){$("src").value="mode";$("mode").value=k.mode;$("mtonic").value=k.pc;}syncMode();}
