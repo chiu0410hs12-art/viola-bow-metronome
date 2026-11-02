@@ -44,11 +44,26 @@ body{background:#fbf8f1;color:#222;min-height:100vh}
 #tmid{position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:#555}#tneedle{position:absolute;top:-4px;width:6px;height:22px;border-radius:3px;background:#9ca3af;left:50%;transform:translateX(-50%);transition:left .06s}
 #partial{text-align:center;color:#8b3a3a;margin:6px}#rprob{font-size:.9rem;color:#444;margin:4px 0 8px;padding-left:22px}
 #rhist table{width:100%;border-collapse:collapse;font-size:.8rem}#rhist td,#rhist th{border-bottom:1px solid #eee;padding:3px;text-align:left}
-#rangelbl.tip{background:#eef4ff;border-radius:8px;padding:4px 8px;cursor:pointer}</style></head><body><div id="top"><span style="visibility:hidden">極簡練習模式 · Flesch No.5</span><span><button id="repbtn">📊 報告</button><button id="gear">⚙ 設定</button></span></div>
+#rangelbl.tip{background:#eef4ff;border-radius:8px;padding:4px 8px;cursor:pointer}#top>span:first-child{flex:1 1 0;min-width:0;overflow:hidden;white-space:nowrap}#top>span:last-child{white-space:nowrap;flex:none}#metbtn{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle}#metbtn.off{opacity:.55}
+#dialov{position:fixed;inset:0;background:#0003;z-index:60;display:flex;align-items:center;justify-content:center}
+#dial{position:relative;width:min(300px,84vw);background:#fbf8f2;border-radius:24px;padding:18px 14px 14px;box-shadow:0 10px 40px #0003;text-align:center;touch-action:none;user-select:none;-webkit-user-select:none}
+#dialring{width:100%;display:block;touch-action:none}#dialc{position:absolute;left:0;right:0;top:18px;aspect-ratio:1;width:calc(100% - 28px);margin:0 14px;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+#dialpulse{width:22px;height:22px;border-radius:50%;background:#d6cfc4;margin-bottom:6px;transition:transform .08s,background .08s}#dialpulse.on{background:#8b3a3a;transform:scale(1.35)}#dialpulse.acc{background:#b91c1c;transform:scale(1.7)}
+#dialbpm{font-size:52px;font-weight:700;color:#3b2a22;line-height:1}#dialunit{font-size:13px;color:#888}#dialmeter{font-size:13px;color:#555;margin-top:6px;max-width:70%}
+#dialrow{display:flex;justify-content:space-between;align-items:center;margin-top:6px}#dialrow button{width:44px;height:44px;border-radius:50%;border:1px solid #ddd;background:#fff;font-size:22px}
+#dialx{position:absolute;right:10px;top:8px;border:0;background:none;font-size:20px;color:#888;z-index:2}#dialhint{font-size:12px;color:#999;margin-top:4px}
+</style></head><body><div id="dialov" style="display:none"><div id="dial"><button id="dialx" aria-label="關閉">✕</button>
+<svg id="dialring" viewBox="0 0 200 200"><circle cx="100" cy="100" r="92" fill="#fff" stroke="#e5ded3" stroke-width="10"/><g id="dialticks"></g><circle id="dialknob" cx="100" cy="8" r="7" fill="#8b3a3a"/></svg>
+<div id="dialc"><div id="dialpulse"></div><div id="dialbpm">60</div><div id="dialunit">BPM</div><div id="dialmeter"></div></div>
+<div id="dialrow"><button id="dialm">−</button><label class="chk" id="dialonlbl"><input id="dialon" type="checkbox" checked>聲音</label><button id="dialp">＋</button></div>
+<div id="dialhint">左右撥動調整速度</div></div></div>
+<div id="top"><span style="visibility:hidden">極簡練習模式 · Flesch No.5</span><span><button id="metbtn" aria-label="節拍器"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M9 2h6l4.5 19.5H4.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 15 17.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="15" r="1.8" fill="currentColor"/><path id="metslash" d="M3 3 21 21" stroke="#b91c1c" stroke-width="2.4" stroke-linecap="round" style="display:none"/></svg></button><button id="repbtn">📊 報告</button><button id="gear">⚙ 設定</button></span></div>
 <div id="drawer"><h2>設定 <button id="close" class="hb">✕</button></h2><label id="keylbl">調性<select id="key"></select></label>
 <label>曲目<select id="src"><option value="full">音階＋琶音</option><option value="scale">只有音階</option><option value="mode">調式音階</option></select></label>
 <div id="moderow" style="display:none;flex-direction:column;gap:12px"><label>調式<select id="mode"></select></label><label>主音<select id="mtonic"></select></label><div id="modenote" style="display:none"></div></div>
 <label>每弓音數 N（1–24）<input id="n" type="number" min="1" max="24" value="6"></label>
+<label class="chk"><input id="meton" type="checkbox" checked>節拍器聲音</label>
+<label>記譜方式<select id="notation"><option value="simple">簡易（每弓一格）</option><option value="rhythm">依拍號與節奏型</option></select></label>
 <label><span id="bpmlbl">速度 BPM</span>：<span id="bpmv">60</span><input id="bpm" type="range" min="30" max="200" value="60"></label>
 <details id="rhy"><summary>節奏設定</summary>
 <label>拍號<select id="meter"><option value="">預設（每弓一拍，平均分配）</option><option>2/4</option><option>3/4</option><option>4/4</option><option>6/8</option></select></label>
@@ -266,7 +281,7 @@ function layoutScore(list,fif,W,availH){
           if(nn.a!==exp){s+=G(AG[nn.a],xa-1.4*SP,y,SP);st[L.step(nn)]=nn.a;}
           for(let q=-2;q>=p;q-=2)s+=`<line x1="${xa-4}" x2="${xa+SP*1.2+4}" y1="${Y(q)}" y2="${Y(q)}" stroke="#222" stroke-width="1.3"/>`;
           for(let q=10;q<=p;q+=2)s+=`<line x1="${xa-4}" x2="${xa+SP*1.2+4}" y1="${Y(q)}" y2="${Y(q)}" stroke="#222" stroke-width="1.3"/>`;
-          np[b.start+j]={page:pi,sys:si,x:xa,y0:top-3.2*SP,y1:top+7.2*SP};s+=`<g class="nh" data-b="${it.bi}" data-j="${j}" data-i="${b.start+j}" data-x="${xa.toFixed(1)}">${G(b.long?"nh":"nb",xa,y,SP)}</g>`;
+          np[b.start+j]={page:pi,sys:si,x:xa,y0:top-3.2*SP,y1:top+7.2*SP,hy:y,up:p<4};s+=`<g class="nh" data-b="${it.bi}" data-j="${j}" data-i="${b.start+j}" data-x="${xa.toFixed(1)}">${G(b.long?"nh":"nb",xa,y,SP)}</g>`;
           s+=p<4?`<line x1="${xa+SP*1.15}" x2="${xa+SP*1.15}" y1="${y-1}" y2="${y-3.5*SP}" stroke="#222" stroke-width="1.3"/>`
                 :`<line x1="${xa+0.6}" x2="${xa+0.6}" y1="${y+1}" y2="${y+3.5*SP}" stroke="#222" stroke-width="1.3"/>`;
           x+=3.2*SP*k;});
@@ -309,7 +324,7 @@ function layoutRhythm(ms,fif,W,availH,opts){
           if(nn.a!==exp){s+=G(AG[nn.a],xa-1.4*SP,y,SP);st[L.step(nn)]=nn.a;}
           for(let q=-2;q>=p;q-=2)s+=ln_(xa-4,Y(q),xa+SP*1.2+4,Y(q));
           for(let q=10;q<=p;q+=2)s+=ln_(xa-4,Y(q),xa+SP*1.2+4,Y(q));
-          np[o.i]={page:pi,sys:si,x:xa,y0:top-3.2*SP,y1:top+7.2*SP};
+          np[o.i]={page:pi,sys:si,x:xa,y0:top-3.2*SP,y1:top+7.2*SP,hy:y,up:p<4};
           s+=`<g class="nh" data-i="${o.i}" data-x="${xa.toFixed(1)}">${G(d>=96?"nh":"nb",xa,y,SP)}</g>`;
           if([18,36,72,144].includes(d))s+=`<circle cx="${(xa+1.75*SP).toFixed(1)}" cy="${(p%2===0?y-SP*0.5:y).toFixed(1)}" r="${(SP*0.2).toFixed(1)}"/>`;
           heads.push({o,xa,y,p});x+=nw(d)*k;});
@@ -322,7 +337,7 @@ function layoutRhythm(ms,fif,W,availH,opts){
               if(beamable(h))for(let f=0;f<lv(h.o.dur);f++){const fy=h.up?ey+f*0.9*SP:ey-f*0.9*SP,sg=h.up?1:-1;s+=`<path d="M${sx.toFixed(1)} ${fy.toFixed(1)}C${(sx+0.2*SP).toFixed(1)} ${(fy+sg*1.2*SP).toFixed(1)} ${(sx+1.2*SP).toFixed(1)} ${(fy+sg*1.4*SP).toFixed(1)} ${(sx+0.9*SP).toFixed(1)} ${(fy+sg*2.8*SP).toFixed(1)}" fill="none" stroke="#222" stroke-width="1.5"/>`;}
               return;}
             const up=r.reduce((a,h)=>a+h.p,0)/r.length<4,by=up?Math.min(...r.map(h=>h.y))-3.3*SP:Math.max(...r.map(h=>h.y))+3.3*SP,sxs=r.map(h=>up?h.xa+SP*1.15:h.xa+0.6);
-            r.forEach((h,q)=>{h.up=up;s+=ln_(sxs[q],up?h.y-1:h.y+1,sxs[q],by);});s+=beam(sxs[0],sxs[sxs.length-1],by,up);
+            r.forEach((h,q)=>{h.up=up;if(np[h.o.i])np[h.o.i].up=up;s+=ln_(sxs[q],up?h.y-1:h.y+1,sxs[q],by);});s+=beam(sxs[0],sxs[sxs.length-1],by,up);
             const yb=up?by+0.8*SP:by-0.8*SP;
             r.forEach((h,q)=>{if(lv(h.o.dur)<2)return;const L2=q>0&&lv(r[q-1].o.dur)>=2,R2=q<r.length-1&&lv(r[q+1].o.dur)>=2;
               if(R2)s+=beam(sxs[q],sxs[q+1],yb,up);else if(!L2){const e=q>0?sxs[q]-SP:sxs[q]+SP;s+=beam(Math.min(sxs[q],e),Math.max(sxs[q],e),yb,up);}});});
@@ -346,7 +361,7 @@ L.MODES.forEach((M,m)=>{const o=document.createElement("option");o.value=m;o.tex
 ["C","C♯／D♭","D","E♭／D♯","E","F","F♯／G♭","G","A♭／G♯","A","B♭／A♯","B"].forEach((n,pc)=>{const o=document.createElement("option");o.value=pc;o.textContent=n;$("mtonic").appendChild(o);});
 let ctx,timer=null,next=0,beat=0,list=[],cin=0,fif=0,pos=0;
 $("bpm").oninput=()=>$("bpmv").textContent=$("bpm").value;
-function click(t,acc){const o=ctx.createOscillator(),g=ctx.createGain();const lv=acc===true?2:acc===false?0:acc,FG=lv===2?[1500,.9]:lv===1?[1200,.7]:lv==="sub"?[700,.22]:[900,.5];o.frequency.value=FG[0];
+function click(t,acc){if(window.__onClk)window.__onClk(t,acc);if(window.__metOn===false)return;const o=ctx.createOscillator(),g=ctx.createGain();const lv=acc===true?2:acc===false?0:acc,FG=lv===2?[1500,.9]:lv===1?[1200,.7]:lv==="sub"?[700,.22]:[900,.5];o.frequency.value=FG[0];
   g.gain.setValueAtTime(FG[1],t);g.gain.exponentialRampToValueAtTime(0.001,t+0.05);o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+0.06);}
 function build(){const noteIdx=list.length&&list[pos]?list[pos].start:0;
   const N=Math.min(24,Math.max(1,parseInt($("n").value)||1));$("n").value=N;
@@ -369,7 +384,7 @@ function show(i){pos=i;const b=list[i],p=i+1<=rangeB()?list[i+1]:($("end").value
   $("notes").textContent=b.notes.map(L.name).join(" ");placeBox(i);
   $("preview").style.display=$("showprev").checked?"":"none";
   $("prevnotes").textContent=p?p.notes.map(L.name).join(" "):"（結束）";if(window.onShow)window.onShow(i,list);}
-function flash(acc){if(window.onBeat)window.onBeat(acc);const d=$("beatdot");d.className=acc?"acc":"on";setTimeout(()=>d.className="",100);}
+function flash(acc){if(window.__dialBeat)window.__dialBeat(acc);if(window.onBeat)window.onBeat(acc);const d=$("beatdot");d.className=acc?"acc":"on";setTimeout(()=>d.className="",100);}
 // ===== score view + note-level multi-segment selection (shared by v1 / v4) =====
 let SC=null,curPage=-1,scKey="",SEGS=[],selAnchor=null,dragSeg=null,full=[];const MINI=true;
 const rangeA=()=>0,rangeB=()=>list.length-1;
@@ -380,7 +395,13 @@ function rebuildSel(toStart){build();if(toStart)pos=0;show(Math.min(pos,list.len
 function availH(){const s=$("staff"),top=s.getBoundingClientRect().top+scrollY,bar=$("bar").offsetHeight,bl=$("below"),extra=bl?bl.offsetHeight:0;return Math.max(160,innerHeight-top-bar-extra-12);}
 // whole key laid out (measures never split across systems); v4 while playing: paginated to the viewport
 function ensureScore(){const cw=$("staff").clientWidth||360,spPx=cw<520?6.2:cw<900?7.4:8.6,W=Math.round(cw*SP/spPx),H=(timer&&!MINI)?availH()*SP/spPx-6:Infinity;
-  const key=[W,Math.round(H),full.length,$("key").value,$("src").value,$("n").value,RON?JSON.stringify(rcfg())+RS.accMarks+RS.bowmode:""].join("|");if(SC&&key===scKey)return;scKey=key;SC=RON?layoutRhythm(FULLMS,fif,W,H,{ts:RS.meter,accMarks:RS.accMarks}):layoutScore(full,fif,W,H);curPage=-1;}
+  const key=[W,Math.round(H),full.length,$("startbow").value,JSON.stringify(SEGS),$("key").value,$("src").value,$("n").value,RON?JSON.stringify(rcfg())+RS.accMarks+RS.bowmode:""].join("|");if(SC&&key===scKey)return;scKey=key;SC=addBowMarks(RON?layoutRhythm(FULLMS,fif,W,H,{ts:RS.meter,accMarks:RS.accMarks}):layoutScore(full,fif,W,H),list);curPage=-1;}
+function addBowMarks(sc,bl){const su=$("startbow").value==="up",S=1.6*SP,add={};
+  bl.forEach((b,i)=>{const q=sc.np[b.start];if(!q||q.hy==null)return;const d=L.bowDir(b.k??i,su),top=q.y0+3.2*SP;
+    const yb=Math.min(top-0.7*SP,q.up?q.hy-4.1*SP:q.hy-1.1*SP),x=q.x+0.6*SP-S/2,y=yb-S;
+    const path=d==="down"?"M2 22V2H22V22H18.6V6.6H5.4V22Z":"M2 2H6.1L12 17.2L17.9 2H22L13.8 22H10.2Z";
+    add[q.page]=(add[q.page]||"")+`<path class="bowmk" d="${path}" fill="#8b3a3a" transform="translate(${x.toFixed(1)},${y.toFixed(1)}) scale(${(S/24).toFixed(3)})"/>`;});
+  sc.pages.forEach((pg,k)=>{if(add[k])pg.svg=pg.svg.replace("</g></svg>",add[k]+"</g></svg>");});return sc;}
 function setPage(p){if(p===curPage)return;curPage=p;const pg=SC.pages[p];$("page").innerHTML=pg.svg;
   const pl=$("pglbl");if(pl)pl.textContent=SC.pages.length>1?`第 ${p+1} / ${SC.pages.length} 頁`:"";
   const box=$("box");box.style.transition="none";requestAnimationFrame(()=>box.style.transition="");}
@@ -401,7 +422,7 @@ function drawRange(){const rg=$("rng");if(!SC||curPage<0){rg.innerHTML="";return
   rg.innerHTML=h;}
 function placeBox(i){updRangeUI();const b=list[i];
   if(MINI&&timer){if(RON){const mi=Math.max(0,TL.measures.findIndex(m=>m.notes.some(o=>o.i===b.start))),cw=$("staff").clientWidth||360,mk="m"+mi+"|"+cw;
-      if(miniKey!==mk){miniKey=mk;$("page").innerHTML=layoutRhythm(TL.measures.slice(mi,mi+2),fif,Math.round(cw*SP/(cw<520?6.2:7.4)),Infinity,{ts:RS.meter,accMarks:RS.accMarks}).pages[0].svg;}
+      if(miniKey!==mk){miniKey=mk;$("page").innerHTML=addBowMarks(layoutRhythm(TL.measures.slice(mi,mi+2),fif,Math.round(cw*SP/(cw<520?6.2:7.4)),Infinity,{ts:RS.meter,accMarks:RS.accMarks}),list).pages[0].svg;}
       document.querySelectorAll("#page g.cnh").forEach(g=>g.classList.remove("cnh"));b.notes.forEach((_,j)=>{const g=document.querySelector(`#page g.nh[data-i="${b.start+j}"]`);if(g)g.classList.add("cnh");});}
     else{const p=i+1<list.length?list[i+1]:($("end").value==="loop"?list[0]:null);$("page").innerHTML=staffSVG(b,p,fif);miniKey="";}curPage=-1;
     $("box").style.opacity=0;$("box2").style.opacity=0;$("rng").innerHTML="";$("mark").style.opacity=0;return;}
@@ -421,19 +442,27 @@ let rz;addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(()=>{SC=nul
 let RON=false,TL=null,FULLMS=null,RT=null,miniKey="";const RS={meter:"",grouping:0,seq:[],accents:[],bowmode:"n",subdiv:false,accMarks:false};
 function rcfg(){return {meter:RS.meter,grouping:RS.grouping,seq:RS.seq,accents:RS.accents,subdiv:RS.subdiv};}
 function rspt(){return 60/+$("bpm").value/RH.unit(rcfg());}
+function rT(x){let g=RT.segs[0];for(const s of RT.segs)if(s.a<=x)g=s;return g.t0+x*g.spt;}
 function rstart(){const spt=rspt(),b=list[pos],c0=ctx.currentTime+0.1,ci=$("countin").checked;
-  RT={spt,t0:c0+(ci?TL.M:0)*spt-b.tick*spt,ci:TL.clicks.findIndex(c=>c.tick>=b.tick),bi:pos,cq:ci?RH.countIn(rcfg()).map(c=>({t:c0+c.tick*spt,level:c.level,n:c.n})):[]};
+  RT={spt,segs:[{a:0,t0:c0+(ci?TL.M:0)*spt-b.tick*spt,spt}],ci:TL.clicks.findIndex(c=>c.tick>=b.tick),bi:pos,cq:ci?RH.countIn(rcfg()).map(c=>({t:c0+c.tick*spt,level:c.level,n:c.n})):[]};
   if(RT.ci<0)RT.ci=TL.clicks.length;}
+function bowTimes(b){const t=rT(b.tick);b.onsS=b.ons.map(v=>rT(b.tick+v)-t);b.dursS=b.durs.map((d,j)=>rT(b.tick+b.ons[j]+d)-rT(b.tick+b.ons[j]));}
+// live tempo: everything already scheduled (< now+LA) keeps its time; the first unscheduled tick keeps its old time and later ticks follow the new tempo
+function retempo(){if(!timer||!RON||!RT)return;const ns=rspt(),os=RT.spt;if(Math.abs(ns-os)<1e-9)return;
+  const a=Math.min(RT.ci<TL.clicks.length?TL.clicks[RT.ci].tick:Infinity,RT.bi<list.length?list[RT.bi].tick:Infinity,TL.total);let Ta=rT(a);
+  if(RT.cq.length){const c0=RT.cq[0].t,r=ns/os;RT.cq.forEach(c=>c.t=c0+(c.t-c0)*r);Ta=c0+(Ta-c0)*r;}
+  RT.segs=RT.segs.filter(g=>g.a<a);if(!RT.segs.length)RT.segs=[{a:0,t0:Ta-a*ns,spt:ns}];else RT.segs.push({a,t0:Ta-a*ns,spt:ns});RT.spt=ns;
+  const i=RT.bi-1,b=list[i];if(b&&b.tick+b.dur>a){bowTimes(b);if(window.onBowRetime)window.onBowRetime(i,rT(b.tick+b.dur)-rT(b.tick),b.onsS,b.dursS);}}
 function rclick(t,level,txt){click(t,level);if(window.onClickSched)window.onClickSched(performance.now()/1000+(t-ctx.currentTime));if(window.onRClick)window.onRClick(performance.now()/1000+(t-ctx.currentTime),level);
   if(level!=="sub")atAudio(t,()=>{if(txt)$("status").textContent=txt;flash(level===2);});}
 function rtick(){const now=ctx.currentTime+LA,spt=RT.spt;
   while(RT.cq.length&&RT.cq[0].t<now){const c=RT.cq.shift();rclick(c.t,c.level,c.n?`預備 ${c.n}`:null);}
-  while(RT.ci<TL.clicks.length&&RT.t0+TL.clicks[RT.ci].tick*spt<now){const c=TL.clicks[RT.ci++];rclick(RT.t0+c.tick*spt,c.level);}
-  while(RT.bi<list.length&&RT.t0+list[RT.bi].tick*spt<now){const i=RT.bi++,b=list[i],t=RT.t0+b.tick*spt,ms=Math.max(0,(t-ctx.currentTime)*1000);
-    b.onsS=b.ons.map(v=>v*spt);b.dursS=b.durs.map(v=>v*spt);if(window.onBowSched)window.onBowSched(i,performance.now()/1000+(t-ctx.currentTime),b.dur*spt,list);
+  while(RT.ci<TL.clicks.length&&rT(TL.clicks[RT.ci].tick)<now){const c=TL.clicks[RT.ci++];rclick(rT(c.tick),c.level);}
+  while(RT.bi<list.length&&rT(list[RT.bi].tick)<now){const i=RT.bi++,b=list[i],t=rT(b.tick),ms=Math.max(0,(t-ctx.currentTime)*1000);
+    bowTimes(b);if(window.onBowSched)window.onBowSched(i,performance.now()/1000+(t-ctx.currentTime),rT(b.tick+b.dur)-t,list);
     atAudio(t,()=>{show(i);if(window.onBowShown)window.onBowShown(i);});}
-  if(RT.bi>=list.length&&RT.ci>=TL.clicks.length){const tEnd=RT.t0+TL.total*spt;
-    if($("end").value==="loop"){if(tEnd<now){RT.t0=tEnd;RT.ci=0;RT.bi=0;if(window.onCycleEnd)window.onCycleEnd();}}
+  if(RT.bi>=list.length&&RT.ci>=TL.clicks.length){const tEnd=rT(TL.total);
+    if($("end").value==="loop"){if(tEnd<now){RT.segs=[{a:0,t0:tEnd,spt:RT.spt}];RT.ci=0;RT.bi=0;if(window.onCycleEnd)window.onCycleEnd();}}
     else if(!endT)endT=setTimeout(()=>{endT=null;stop(true)},Math.max(0,(tEnd-ctx.currentTime)*1000));}}
 // one clock: audio is scheduled on ctx.currentTime with lookahead; visuals queued with their audio time and fired from rAF when heard
 const LA=0.15,VQ=[];let rafId=0;
@@ -458,7 +487,7 @@ function start(){if(timer)return;tipDone();clearTimeout(endT);endT=null;if(!ctx|
   nSched=0;gapAt=-1;selAnchor=null;if(pos<rangeA()||pos>rangeB())pos=rangeA();beat=pos;startBow=pos;cin=$("countin").checked?4:0;next=ctx.currentTime+0.1;if(RON)rstart();timer=setInterval(stick,25);kickV();$("go").textContent="停止";$("go").className="stop";show(pos);}
 function stop(atEnd){VQ.length=0;clearTimeout(endT);endT=null;const was=!!timer;clearInterval(timer);timer=null;if(was&&window.onStop)setTimeout(()=>window.onStop(atEnd===true),0);$("go").textContent="開始";$("go").className="";show(pos);$("status").textContent="已停止";}
 function goto(i){i=Math.max(0,Math.min(list.length-1,i));if(timer)i=Math.max(rangeA(),Math.min(rangeB(),i));
-  if(timer){VQ.length=0;beat=i;startBow=-1;cin=0;next=ctx.currentTime+0.05;if(RON){RT.t0=ctx.currentTime+0.05-list[i].tick*RT.spt;RT.bi=i;RT.cq=[];RT.ci=TL.clicks.findIndex(c=>c.tick>=list[i].tick);if(RT.ci<0)RT.ci=TL.clicks.length;}} // jump: next click plays bow i
+  if(timer){VQ.length=0;beat=i;startBow=-1;cin=0;next=ctx.currentTime+0.05;if(RON){RT.segs=[{a:0,t0:ctx.currentTime+0.05-list[i].tick*RT.spt,spt:RT.spt}];RT.bi=i;RT.cq=[];RT.ci=TL.clicks.findIndex(c=>c.tick>=list[i].tick);if(RT.ci<0)RT.ci=TL.clicks.length;}} // jump: next click plays bow i
   show(i);}
 function toggle(){const t=performance.now();if(t-lastToggle<350)return;lastToggle=t;timer?stop():start();}
 $("go").onclick=e=>{e.stopPropagation();toggle();};window.__goto=i=>goto(i);window.__toggle=()=>toggle();window.__toggleRaw=()=>timer?stop():start();window.__playing=()=>!!timer;window.__rebuild=()=>{build();if(timer)beat=pos;show(pos);};
@@ -491,7 +520,7 @@ st.addEventListener("pointerup",e=>{if(!pd||timer){pd=null;return;}const h=pd.h;
 $("rng").addEventListener("click",e=>{const x=e.target.closest(".rgx");if(!x)return;e.stopPropagation();SEGS.splice(+x.dataset.seg,1);selAnchor=null;rebuildSel(false);});
 $("rangeclr").onclick=e=>{e.stopPropagation();window.__clearRange();};
 // ===== 節奏設定 UI =====
-function rhyRender(){const on=!!RS.meter;$("rhyopts").style.display=on?"":"none";$("bpmlbl").textContent=on?`速度 BPM（${RH.unitName(rcfg())}）`:"速度 BPM";$("accentlbl").style.display=on?"none":"";
+function rhyRender(){if(window.__syncNotation)window.__syncNotation();const on=!!RS.meter;$("rhyopts").style.display=on?"":"none";$("bpmlbl").textContent=on?`速度 BPM（${RH.unitName(rcfg())}）`:"速度 BPM";$("accentlbl").style.display=on?"none":"";
   if(!on)return;const cfg=rcfg(),M=RH.METERS[RS.meter],e8=M.pulse===24;
   $("grplbl").style.display=M.gr.length>1?"":"none";$("grouping").innerHTML=M.gr.map((g,k)=>`<option value="${k}"${k===RS.grouping?" selected":""}>${g.join("+")}</option>`).join("");
   $("seq").innerHTML=RH.seqOf(cfg).map((id,k)=>`<span class="chip">${RH.PAT[id].n}${e8?`<small>（${RH.plen(id)/24}♪）</small>`:""}<b data-k="${k}" title="移除">✕</b></span>`).join('<span class="arr">→</span>');
@@ -508,10 +537,34 @@ $("accreset").onclick=e=>{e.preventDefault();RS.accents=RH.defaultAccents(rcfg()
 $("bowmode").onchange=()=>{RS.bowmode=$("bowmode").value;rhyChanged();};
 $("subdiv").onchange=()=>{RS.subdiv=$("subdiv").checked;rhyChanged();};
 $("accmarks").onchange=()=>{RS.accMarks=$("accmarks").checked;rhyChanged();};
+{const MK="bowMetronome.met.v1";let on=true;try{on=localStorage.getItem(MK)!=="0";}catch(e){}
+  const dov=$("dialov"),bpmEl=$("bpm"),mn=+bpmEl.min,mx=+bpmEl.max;
+  function setMet(v,open){on=!!v;window.__metOn=on;$("meton").checked=on;$("dialon").checked=on;$("metbtn").classList.toggle("off",!on);$("metslash").style.display=on?"none":"";
+    try{localStorage.setItem(MK,on?"1":"0");}catch(e){}if(open&&on)openDial();}
+  function dialRender(){const v=+bpmEl.value;$("dialbpm").textContent=v;$("dialunit").textContent=RS.meter?"BPM（"+RH.unitName(rcfg())+"）":"BPM（每弓一拍）";
+    $("dialmeter").textContent=RS.meter?RH.label(rcfg()):"預設節奏";const a=(v-mn)/(mx-mn)*300-150,r=a*Math.PI/180;$("dialknob").setAttribute("cx",(100+92*Math.sin(r)).toFixed(1));$("dialknob").setAttribute("cy",(100-92*Math.cos(r)).toFixed(1));}
+  function setTempo(v){v=Math.max(mn,Math.min(mx,Math.round(v)));if(v===+bpmEl.value)return;bpmEl.value=v;$("bpmv").textContent=v;retempo();dialRender();}
+  window.__setTempo=setTempo;
+  bpmEl.addEventListener("input",()=>{retempo();dialRender();});
+  let tk="";for(let k=0;k<=30;k++){const r=(k*10-150)*Math.PI/180,r1=k%5?84:80;tk+=`<line x1="${(100+r1*Math.sin(r)).toFixed(1)}" y1="${(100-r1*Math.cos(r)).toFixed(1)}" x2="${(100+88*Math.sin(r)).toFixed(1)}" y2="${(100-88*Math.cos(r)).toFixed(1)}" stroke="#c9bfb2" stroke-width="${k%5?1:2}"/>`;}$("dialticks").innerHTML=tk;
+  function openDial(){dialRender();dov.style.display="flex";}function closeDial(){dov.style.display="none";}window.__openDial=openDial;window.__closeDial=closeDial;
+  let pulseT=0;window.__dialBeat=acc=>{if(dov.style.display==="none")return;const d=$("dialpulse");d.className=acc?"acc":"on";clearTimeout(pulseT);pulseT=setTimeout(()=>d.className="",110);};
+  $("metbtn").onclick=e=>{e.stopPropagation();openDial();};
+  $("meton").onchange=()=>setMet($("meton").checked,true);$("dialon").onchange=()=>setMet($("dialon").checked,false);
+  dov.addEventListener("click",e=>{e.stopPropagation();if(e.target===dov)closeDial();});$("dialx").onclick=e=>{e.stopPropagation();closeDial();};
+  ["pointerdown","pointerup","touchstart","touchend"].forEach(ev=>dov.addEventListener(ev,e=>e.stopPropagation(),{passive:true}));
+  $("dialm").onclick=e=>{e.stopPropagation();setTempo(+bpmEl.value-1);};$("dialp").onclick=e=>{e.stopPropagation();setTempo(+bpmEl.value+1);};
+  let dg=null;const ring=$("dialring");
+  ring.addEventListener("pointerdown",e=>{e.preventDefault();ring.setPointerCapture(e.pointerId);dg={x:e.clientX,v:+bpmEl.value};});
+  ring.addEventListener("pointermove",e=>{if(!dg)return;setTempo(dg.v+(e.clientX-dg.x)/6);});
+  ["pointerup","pointercancel"].forEach(ev=>ring.addEventListener(ev,()=>{dg=null;}));
+  setMet(on,false);
+  const nt=$("notation");window.__syncNotation=()=>{nt.value=RS.meter?"rhythm":"simple";if(dov.style.display!=="none")dialRender();};
+  nt.onchange=()=>{if(nt.value==="rhythm"&&!RS.meter){$("meter").value="4/4";$("meter").onchange();$("rhy").open=true;}else if(nt.value==="simple"&&RS.meter){$("meter").value="";$("meter").onchange();}};}
 window.__rh=()=>({RS,TL,list,spt:rspt()});window.__rhLabel=()=>RS.meter?RH.label(rcfg()):"";
 window.__setRhythm=o=>{Object.assign(RS,o);if(RS.meter&&!RH.ENABLED.includes(RS.meter)){RS.meter="";RS.grouping=0;}$("meter").value=RS.meter;$("bowmode").value=RS.bowmode;$("subdiv").checked=RS.subdiv;$("accmarks").checked=RS.accMarks;rhyChanged();};
 ["key","src","n"].forEach(id=>$(id).onchange=()=>{build();if(timer){beat=pos;if(id!=="n"&&window.onStart)window.onStart();}show(pos);});
-$("end").onchange=()=>show(pos);$("startbow").onchange=()=>show(pos);$("showprev").onchange=()=>show(pos);
+$("end").onchange=()=>show(pos);$("startbow").onchange=()=>{SC=null;show(pos);};$("showprev").onchange=()=>show(pos);
 function syncMode(){setTimeout(()=>{try{updRangeUI()}catch(e){}},0);const isM=$("src").value==="mode";$("moderow").style.display=isM?"flex":"none";$("keylbl").style.display=isM?"none":"";
   const cur=L.KEYS.find(k=>k.id===$("key").value);[...$("key").options].forEach(o=>{if(o.dataset.mode)o.remove();});if(isM){const mk=L.KEYS.find(k=>k.id===L.modeKeyId($("mtonic").value,$("mode").value));const o=document.createElement("option");o.value=mk.id;o.textContent=mk.label;o.dataset.mode=1;$("key").appendChild(o);$("key").value=mk.id;$("modenote").textContent=L.MODES[mk.mode].en+"："+L.modeNote(mk);}else if(cur&&cur.m==="mode")$("key").value=L.KEYS[0].id;}
 {const o=$("src").onchange;$("src").onchange=()=>{syncMode();o();};["mode","mtonic"].forEach(id=>$(id).onchange=()=>{syncMode();$("key").onchange();});}
@@ -607,6 +660,7 @@ window.onClickSched=t=>IN.clicks.push(t+outLat());
 window.onBowSched=(i,t0,spb,list)=>{t0+=outLat();IN.clicks.push(t0);if(!IN.cyc)IN.cyc=newCycle();const b=list[i];
   IN.bows.push({i,t0,spb,start:b.start,notes:b.notes,midis:b.notes.map(L.midi),ons:b.onsS,durs:b.dursS,cyc:IN.cyc});};
 window.onBowShown=i=>{IN.curBow=i;};
+window.onBowRetime=(i,spb,ons,durs)=>{const b=[...IN.bows].reverse().find(x=>x.i===i);if(b){b.spb=spb;b.ons=ons;b.durs=durs;}};
 function finish(cyc,partial){if(!cyc)return;const cs=cyc.cents,sel=cyc.segs.length?cyc.segs.flatMap(([a,b])=>Array.from({length:b-a+1},(_,q)=>a+q)):cs.map((_,q)=>q);
   if(!partial){const c=PD.counts(sel.map(q=>cs[q]),TOL);const h=hist();h.push({date:new Date().toLocaleString("zh-TW",{hour12:false}),key:L.KEYS.find(k=>k.id===cyc.key).label,N:cyc.N,bpm:cyc.bpm,rh:cyc.rh||"",...c});
     try{localStorage.setItem("bowMetronomeHistory",JSON.stringify(h.slice(-50)));}catch(e){console.warn("history not saved",e);}}
